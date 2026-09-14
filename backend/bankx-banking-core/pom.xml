@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ======================================================================
+         BankX Banking Core — Modular Monolith chứa toàn bộ nghiệp vụ ngân hàng
+         Modules bên trong:
+           auth/        → JWT, OTP, Refresh Token
+           customer/    → KYC, Profile
+           account/     → Balance, Optimistic Lock
+           transfer/    → Idempotency, Saga, Outbox
+           ledger/      → Double-Entry Bookkeeping
+           payment/     → Strategy Pattern, Bill, QR
+           card/        → Tokenization, Virtual Card
+           notification/ → Kafka Consumer
+           fraud/       → Rule Engine
+           audit/       → Immutable Audit Trail
+         Chạy trên port: 8091
+         ====================================================================== -->
+
+    <parent>
+        <groupId>com.bankx</groupId>
+        <artifactId>bankx-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>bankx-banking-core</artifactId>
+    <packaging>jar</packaging>
+    <name>BankX Banking Core</name>
+    <description>Core banking modules: Auth, Account, Transfer, Ledger, Payment, Card, Notification, Fraud, Audit</description>
+
+    <dependencies>
+        <!-- Shared library -->
+        <dependency>
+            <groupId>com.bankx</groupId>
+            <artifactId>bankx-common</artifactId>
+        </dependency>
+
+        <!-- ================================================================
+             Spring Boot Web — REST API (Servlet-based, không phải WebFlux)
+             Tại sao không dùng WebFlux? Banking logic phức tạp, JPA không
+             hỗ trợ reactive tốt. Servlet + Virtual Threads = đủ scalable.
+             ================================================================ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Security — JWT filter, RBAC (@PreAuthorize) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Validation — @Valid, @NotNull, @Size trên DTO -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Spring Data JPA — ORM với Hibernate, @Version (Optimistic Lock) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL Driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Flyway — DB Migration (KHÔNG dùng ddl-auto=create/update) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- Redis — OTP, Idempotency, Rate Limit, Cache, Distributed Lock -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- Redisson — Distributed Lock cho Phase 3 concurrency -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.36.0</version>
+        </dependency>
+
+        <!-- Apache Kafka — Outbox Pattern event publishing -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <!-- ================================================================
+             JWT — Access Token + Refresh Token
+             RS256 (asymmetric) cho production security
+             ================================================================ -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- MapStruct — Domain Model ↔ JPA Entity ↔ DTO mapping -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+        </dependency>
+
+        <!-- OpenAPI — Swagger UI tự động từ Controller annotations -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- Actuator — Health, Metrics, Info endpoints -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Prometheus metrics -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <!-- OpenTelemetry — Distributed Tracing (Jaeger) -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <!-- Resilience4j — Circuit Breaker, Retry -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+        </dependency>
+
+        <!-- Spring AOP — Cho @Idempotent, @AuditLog custom annotations -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- ================================================================
+             TEST DEPENDENCIES
+             ================================================================ -->
+        <!-- Testcontainers — Real PostgreSQL + Redis + Kafka trong integration test -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

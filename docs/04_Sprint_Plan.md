@@ -1,4 +1,4 @@
-﻿# BankX Digital Banking Platform — Lộ Trình 30 Sprint (Sprint Plan)
+# BankX Digital Banking Platform — Lộ Trình 30 Sprint (Sprint Plan)
 
 Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. Mỗi Sprint được thiết kế để học được một hoặc nhiều kỹ thuật banking-grade quan trọng.
 
@@ -15,44 +15,42 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 | **Phase 2** | Sprint 06-12 | Transfer Core (Banking Heart) | Ledger, Idempotency, Optimistic Lock, Outbox, Saga |
 | **Phase 3** | Sprint 13-18 | Payment & Card | Strategy Pattern, QR, Fraud Detection |
 | **Phase 4** | Sprint 19-24 | Distributed & Observability | CQRS, Prometheus, Jaeger, Circuit Breaker |
-| **Phase 5** | Sprint 25-30 | Mobile & Production | Ionic/Capacitor, CI/CD, K8s, Load Test |
+| **Phase 5** | Sprint 25-30 | Hardening & Production | Security Audit, CI/CD, K8s, Load Test, Chaos Engineering |
 
 ---
 
 ## 🏗️ Phase 0: Foundation (Sprint 00)
 
-**Trạng thái:** `[ ]` Chưa bắt đầu
+**Trạng thái:** `[x]` Đã hoàn thành
 
 ### Sprint 00: Infrastructure Setup
 **Mục tiêu:** Dựng toàn bộ hạ tầng local, khởi tạo cấu trúc dự án.
 
 **Checklist:**
-- `[ ]` Tạo thư mục `banking/` monorepo structure
+- `[x]` Tạo thư mục `banking/` monorepo structure
   ```
   banking/
   ├── backend/            # Spring Boot multi-module Maven
-  ├── frontend-web/       # Angular 22
-  ├── frontend-mobile/    # Ionic + Angular
+  ├── frontend-web/       # Angular 22 Customer & Admin Web Portal (Responsive)
   ├── infrastructure/     # Docker, K8s configs
-  └── docs/               # Architecture docs (đây rồi!)
+  └── docs/               # Architecture docs
   ```
-- `[ ]` `docker-compose.yml` khởi chạy:
+- `[x]` `docker-compose.yml` khởi chạy:
   - PostgreSQL 16 (port 5432)
   - Redis 7 (port 6379)
   - Apache Kafka + Zookeeper/KRaft (port 9092)
-  - Kafka UI (Conduktor/AKHQ) (port 8080)
+  - Kafka UI (port 8080)
   - Prometheus (port 9090)
   - Grafana (port 3000)
   - Jaeger (port 16686)
-- `[ ]` Maven multi-module `pom.xml` với modules:
+- `[x]` Maven multi-module `pom.xml` với modules:
   - `bankx-api-gateway`
-  - `bankx-auth-service` (Phase 1: module trong monolith)
-  - `bankx-banking-core` (chứa tất cả banking modules)
+  - `bankx-banking-core` (chứa các banking core modules)
   - `bankx-common` (shared library)
-- `[ ]` Khởi tạo Angular project với Standalone Components + SCSS
-- `[ ]` Đọc và nắm vững tất cả docs trong `banking/docs/`
+- `[x]` Khởi tạo Angular project với Standalone Components + SCSS (frontend-web compile sạch)
+- `[x]` Đọc và nắm vững tất cả docs trong `banking/docs/`
 
-**Kết quả bàn giao:** `docker-compose up` → Tất cả services UP.
+**Kết quả bàn giao:** `docker-compose up` → Tất cả services UP. Frontend compile sạch 100%.
 
 ---
 

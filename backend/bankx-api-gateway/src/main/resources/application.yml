@@ -1,0 +1,139 @@
+# ==============================================================================
+# BankX API Gateway — Application Configuration (Local Profile)
+# ==============================================================================
+
+server:
+  port: 8090
+
+spring:
+  application:
+    name: bankx-api-gateway
+
+  # ============================================================================
+  # Redis — Rate Limiting (Token Bucket per userId/IP)
+  # ============================================================================
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: bankx_redis_password
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+
+  # ============================================================================
+  # Spring Cloud Gateway Routes
+  # Tất cả request đều đi qua Gateway trước khi đến Banking Core
+  # ============================================================================
+  cloud:
+    gateway:
+      routes:
+        # Auth endpoints — Không cần JWT (public)
+        - id: auth-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@ipKeyResolver}"
+
+        # Customer endpoints — Cần JWT
+        - id: customer-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/customers/**
+          filters:
+            - AuthJwtFilter
+
+        # Account endpoints — Cần JWT
+        - id: account-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/accounts/**
+          filters:
+            - AuthJwtFilter
+
+        # Transfer endpoints — Cần JWT + Idempotency-Key header
+        - id: transfer-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/transfers/**
+          filters:
+            - AuthJwtFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@userKeyResolver}"
+
+        # Payment endpoints — Cần JWT
+        - id: payment-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - AuthJwtFilter
+
+        # Admin endpoints — Cần JWT + ROLE_ADMIN
+        - id: admin-route
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/admin/**
+          filters:
+            - AuthJwtFilter
+
+      # Cấu hình CORS — Cho phép Angular dev server (port 4200)
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowed-origins:
+              - "http://localhost:4200"   # Angular Web
+              - "http://localhost:4201"   # Angular Admin Portal
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowed-headers:
+              - "*"
+            exposed-headers:
+              - "X-Trace-Id"
+            allow-credentials: true
+            max-age: 3600
+
+      # Default filters áp dụng cho tất cả routes
+      default-filters:
+        - name: AddRequestHeader
+          args:
+            name: X-Gateway-Version
+            value: "1.0"
+
+# ============================================================================
+# Actuator — Health + Metrics endpoints
+# ============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ============================================================================
+# JWT Secret Key — Đồng bộ với Banking Core
+# Trong production: lấy từ Vault hoặc env variable
+# ============================================================================
+bankx:
+  jwt:
+    secret: "bankx-super-secret-key-for-development-only-change-in-production-minimum-256-bits"
+    access-token-expiry-minutes: 15

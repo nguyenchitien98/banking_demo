@@ -1,4 +1,4 @@
-﻿# BankX — Progress Tracker (Task.md)
+# BankX — Progress Tracker (Task.md)
 
 > Cập nhật file này sau mỗi task hoàn thành. Format: `[x]` done, `[/]` in progress, `[ ]` todo.
 
@@ -6,12 +6,12 @@
 
 ## 📦 Sprint 00 — Infrastructure Foundation
 
-- `[ ]` Tạo cấu trúc thư mục monorepo banking/
-- `[ ]` Docker Compose với PostgreSQL + Redis + Kafka + Kafka UI
-- `[ ]` Docker Compose với Prometheus + Grafana + Jaeger
-- `[ ]` Maven multi-module `pom.xml` (bankx-gateway, bankx-core, bankx-common)
-- `[ ]` Angular 22 project với Standalone Components
-- `[ ]` Đọc và review tất cả docs trong banking/docs/
+- `[x]` Tạo cấu trúc thư mục monorepo banking/
+- `[x]` Docker Compose với PostgreSQL + Redis + Kafka + Kafka UI
+- `[x]` Docker Compose với Prometheus + Grafana + Jaeger
+- `[x]` Maven multi-module `pom.xml` (bankx-api-gateway, bankx-banking-core, bankx-common)
+- `[x]` Angular 22 project với Standalone Components (frontend-web)
+- `[x]` Đọc và review tất cả docs trong banking/docs/
 
 ---
 
@@ -161,12 +161,12 @@
 ## 📊 Progress Summary
 
 ```
-Phase 0 (Sprint 00):          0/7   tasks  [ 0%]
-Phase 1 (Sprint 01-05):       0/35  tasks  [ 0%]
-Phase 2 (Sprint 06-12):       0/49  tasks  [ 0%]
+Phase 0 (Sprint 00):          6/6   tasks  [100%]
+Phase 1 (Sprint 01-05):       0/35  tasks  [  0%]
+Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
 Phase 3+ (Sprint 13-30):      Not broken down yet
 
-OVERALL: 0/91+ tasks completed
+OVERALL: 6/90 tasks completed
 ```
 
 ---

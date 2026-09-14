@@ -1,0 +1,244 @@
+# =============================================================================
+# BankX Digital Banking Platform — Docker Compose Infrastructure
+# =============================================================================
+# Cách chạy:
+#   docker-compose up -d
+#   docker-compose down -v  (xóa cả volumes)
+# =============================================================================
+
+name: bankx-infrastructure
+
+services:
+
+  # ===========================================================================
+  # DATABASE: PostgreSQL 16
+  # Lưu trữ toàn bộ dữ liệu banking: accounts, transactions, ledger entries...
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: bankx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bankx_db
+      POSTGRES_USER: bankx_user
+      POSTGRES_PASSWORD: bankx_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d  # Script khởi tạo DB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bankx_user -d bankx_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # CACHE & SESSION STORE: Redis 7
+  # Dùng cho: OTP (TTL 120s), Refresh Token, Idempotency Key, Rate Limit,
+  #           Balance Cache (30s), Distributed Lock (Redisson)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: bankx-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass bankx_redis_password
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "bankx_redis_password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # MESSAGE BROKER: Apache Kafka + KRaft (không cần ZooKeeper)
+  # Dùng cho: Outbox Pattern events, Notification, Audit, Fraud detection
+  # Topics: transfer-completed, payment-completed, fraud-alert-created, ...
+  # ===========================================================================
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: bankx-kafka
+    restart: unless-stopped
+    environment:
+      # KRaft mode — Không cần ZooKeeper (Kafka 3.x+)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 ngày giữ message
+      CLUSTER_ID: "bankx-kafka-cluster-001"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # KAFKA UI: AKHQ (Another Kafka High-level dashboard Q)
+  # Giao diện web để xem topics, messages, consumer groups, lag
+  # URL: http://localhost:8080
+  # ===========================================================================
+  kafka-ui:
+    image: tchiotludo/akhq:latest
+    container_name: bankx-kafka-ui
+    restart: unless-stopped
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            bankx-kafka:
+              properties:
+                bootstrap.servers: "kafka:9092"
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # METRICS COLLECTION: Prometheus
+  # Thu thập metrics từ Spring Boot Actuator + custom business metrics
+  # URL: http://localhost:9090
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bankx-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--storage.tsdb.retention.time=15d"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # VISUALIZATION: Grafana
+  # Dashboard theo dõi: Transfer rate, Error rate, Kafka lag, JVM metrics
+  # URL: http://localhost:3000 (admin/admin — đổi sau khi login lần đầu)
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bankx-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: bankx_grafana_admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_DOMAIN: localhost
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning  # Auto-load datasources + dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # DISTRIBUTED TRACING: Jaeger
+  # Theo dõi trace từ Gateway → Transfer → Ledger → Kafka → Notification
+  # URL: http://localhost:16686
+  # ===========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: bankx-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: memory
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC (Spring Boot gửi traces về đây)
+      - "4318:4318"    # OTLP HTTP
+    networks:
+      - bankx-network
+
+  # ===========================================================================
+  # DATABASE MANAGEMENT: pgAdmin (Optional — chỉ dùng cho dev)
+  # URL: http://localhost:5050 (admin@bankx.vn / bankx_pgadmin)
+  # ===========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: bankx-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@bankx.vn
+      PGADMIN_DEFAULT_PASSWORD: bankx_pgadmin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bankx-network
+    profiles:
+      - dev  # Chỉ khởi chạy khi: docker-compose --profile dev up
+
+# =============================================================================
+# VOLUMES: Persistent storage
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  kafka_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS: Isolated network cho banking services
+# =============================================================================
+networks:
+  bankx-network:
+    driver: bridge
+    name: bankx-network

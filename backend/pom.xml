@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ======================================================================
+         BankX Parent POM — Quản lý toàn bộ dependency versions
+         Tất cả module con kế thừa từ đây, không tự khai báo version riêng
+         ====================================================================== -->
+
+    <!-- Kế thừa Spring Boot Parent để được manage dependency versions tự động -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.bankx</groupId>
+    <artifactId>bankx-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>BankX Parent</name>
+    <description>BankX Digital Banking Platform — Modular Monolith (Phase 1)</description>
+
+    <!-- ======================================================================
+         Khai báo tất cả modules con
+         ====================================================================== -->
+    <modules>
+        <module>bankx-common</module>
+        <module>bankx-api-gateway</module>
+        <module>bankx-banking-core</module>
+    </modules>
+
+    <!-- ======================================================================
+         Properties — Quản lý tập trung versions
+         ====================================================================== -->
+    <properties>
+        <java.version>21</java.version>
+        <spring-cloud.version>2023.0.3</spring-cloud.version>
+        <springdoc.version>2.6.0</springdoc.version>
+        <mapstruct.version>1.6.2</mapstruct.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <flyway.version>10.18.0</flyway.version>
+        <testcontainers.version>1.20.2</testcontainers.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+    </properties>
+
+    <!-- ======================================================================
+         Dependency Management — Khai báo version, modules con chỉ cần groupId+artifactId
+         ====================================================================== -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Testcontainers BOM -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- ============================================================
+                 Module nội bộ BankX — Dùng lại giữa các modules
+                 ============================================================ -->
+            <dependency>
+                <groupId>com.bankx</groupId>
+                <artifactId>bankx-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ============================================================
+                 JWT — Xác thực Access Token và Refresh Token
+                 ============================================================ -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- ============================================================
+                 MapStruct — Mapping Domain Model ↔ JPA Entity ↔ DTO
+                 Thay thế cho manual mapping, giảm boilerplate
+                 ============================================================ -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- ============================================================
+                 OpenAPI Documentation — Tự động sinh Swagger UI
+                 ============================================================ -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- ============================================================
+                 Resilience4j — Circuit Breaker, Retry, Rate Limiter
+                 ============================================================ -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ======================================================================
+         Dependencies dùng cho TẤT CẢ modules
+         ====================================================================== -->
+    <dependencies>
+        <!-- Lombok — Giảm boilerplate (@Data, @Builder, @Slf4j...) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- ======================================================================
+         Build Plugin Management
+         ====================================================================== -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Spring Boot Maven Plugin -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+
+                <!-- MapStruct + Lombok phải được cấu hình đúng thứ tự compiler -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <!-- Lombok PHẢI đứng trước MapStruct -->
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                        <compilerArgs>
+                            <!-- Bật Virtual Threads support -->
+                            <arg>--enable-preview</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+
+                <!-- Flyway Plugin — Chạy migration từ command line -->
+                <plugin>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-maven-plugin</artifactId>
+                    <version>${flyway.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

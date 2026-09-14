@@ -1,0 +1,37 @@
+# Prometheus Configuration — BankX
+# Thu thập metrics từ các Spring Boot services
+
+global:
+  scrape_interval: 15s      # Cứ 15s pull metrics 1 lần
+  evaluation_interval: 15s  # Evaluate alert rules mỗi 15s
+  scrape_timeout: 10s
+
+# Alert manager (cấu hình sau ở Sprint 20)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # Prometheus tự monitor chính nó
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # API Gateway metrics
+  - job_name: "bankx-api-gateway"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8090"]
+    # host.docker.internal để container Prometheus gọi ra host machine
+
+  # Banking Core Service metrics
+  - job_name: "bankx-banking-core"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8091"]
+
+  # Redis Exporter (nếu cài redis_exporter — Phase 4)
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
