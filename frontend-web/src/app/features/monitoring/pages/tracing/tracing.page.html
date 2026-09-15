@@ -1,0 +1,143 @@
+<div class="tracing-container">
+  <!-- Page Header -->
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-dark mb-1">
+        <i class="bi bi-diagram-3-fill text-warning me-2"></i> Distributed Tracing — Jaeger & OpenTelemetry
+      </h2>
+      <p class="text-muted small mb-0">Theo dõi toàn diện chuỗi gọi dịch vụ end-to-end: W3C traceparent, MDC Log Correlation & Custom Spans</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-warning btn-sm fw-bold text-dark" (click)="simulateSpanTree()" [disabled]="simulating">
+        <span *ngIf="!simulating"><i class="bi bi-play-circle-fill me-1"></i> Mô Phỏng Tracing Spans mới</span>
+        <span *ngIf="simulating" class="spinner-border spinner-border-sm me-1"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ successMessage }}
+  </div>
+
+  <!-- VERIFICATION GUIDE PANEL (Mandatory RULE[AGENTS.md]) -->
+  <div class="card verification-guide-card mb-4 shadow-sm border-0">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+      <span class="fw-bold"><i class="bi bi-journal-check me-2 text-warning"></i> Hướng Dẫn Kiểm Thử Thủ Công (Verification Guide Panel)</span>
+      <span class="badge bg-warning text-dark fw-bold">Sprint 21 Rule</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div *ngFor="let step of guideSteps; let i = index" class="col-md-3">
+          <div class="guide-step-box p-3 h-100 rounded border">
+            <div class="step-num text-primary fw-bold mb-1">0{{ i + 1 }}</div>
+            <div class="step-title fw-bold text-dark mb-1">{{ step.title }}</div>
+            <div class="step-desc text-muted small">{{ step.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- W3C Header & MDC Context Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold text-primary">
+          <i class="bi bi-globe me-2"></i> W3C Standard Trace Context (traceparent)
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-muted small">W3C Header:</span>
+            <code class="d-block bg-light p-2 rounded text-danger fw-bold border mt-1">{{ traceContext.traceparent }}</code>
+          </div>
+          <div class="row text-center mt-3">
+            <div class="col-6 border-end">
+              <span class="small text-muted">Trace ID (32 hex)</span>
+              <div class="fw-bold text-dark small"><code>{{ traceContext.traceId }}</code></div>
+            </div>
+            <div class="col-6">
+              <span class="small text-muted">Span ID (16 hex)</span>
+              <div class="fw-bold text-dark small"><code>{{ traceContext.spanId }}</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold text-success">
+          <i class="bi bi-journal-text me-2"></i> SLF4J MDC Log Correlation
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-2">Tự động đính kèm <code>traceId</code> và <code>spanId</code> vào mọi dòng Log giúp tra cứu nguyên nhân lỗi tức thì:</p>
+          <div class="bg-dark text-light p-3 rounded font-monospace small" style="font-size: 0.8rem;">
+            <div>2026-09-15 22:42:00 [bankx-banking-core] [traceId={{ traceContext.traceId }} spanId={{ traceContext.spanId }}] INFO  c.b.c.i.t.TraceService - ▶ [SPAN START] Operations [transfer.debit_account]</div>
+            <div>2026-09-15 22:42:01 [bankx-banking-core] [traceId={{ traceContext.traceId }} spanId={{ traceContext.spanId }}] INFO  c.b.c.i.t.TraceService - ⏹ [SPAN END] Completed [transfer.debit_account]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jaeger Distributed Trace Waterfall Tree -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-bar-chart-steps me-2 text-warning"></i> Jaeger Distributed Trace Waterfall Visualizer</span>
+      <span class="badge bg-warning text-dark">Total Duration: {{ waterfallRoot.durationMs }} ms</span>
+    </div>
+    <div class="card-body">
+      <!-- Root Span -->
+      <div class="span-waterfall-box mb-3">
+        <div class="span-node-header p-3 bg-light rounded border mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <span class="badge bg-primary me-2">{{ waterfallRoot.serviceName }}</span>
+            <strong class="text-dark">{{ waterfallRoot.spanName }}</strong>
+            <code class="ms-2 text-muted">({{ waterfallRoot.spanId }})</code>
+          </div>
+          <span class="fw-bold text-success">{{ waterfallRoot.durationMs }} ms</span>
+        </div>
+
+        <!-- Level 1 Children -->
+        <div class="ps-4 border-start border-3 border-warning">
+          <div *ngFor="let c1 of waterfallRoot.children" class="mb-2">
+            <div class="span-node-child p-2 rounded border bg-white d-flex justify-content-between align-items-center mb-1">
+              <div>
+                <span class="badge bg-secondary me-2">{{ c1.serviceName }}</span>
+                <span class="fw-bold">{{ c1.spanName }}</span>
+                <code class="ms-2 text-muted">({{ c1.spanId }})</code>
+              </div>
+              <span class="badge bg-light text-dark border">{{ c1.durationMs }} ms</span>
+            </div>
+
+            <!-- Level 2 Children -->
+            <div *ngIf="c1.children && c1.children.length > 0" class="ps-4 border-start border-2 border-info mt-1">
+              <div *ngFor="let c2 of c1.children" class="mb-1">
+                <div class="span-node-child p-2 rounded border bg-light d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-info text-dark me-2">{{ c2.serviceName }}</span>
+                    <span>{{ c2.spanName }}</span>
+                    <code class="ms-2 text-muted">({{ c2.spanId }})</code>
+                  </div>
+                  <span class="badge bg-white text-dark border">{{ c2.durationMs }} ms</span>
+                </div>
+
+                <!-- Level 3 Children -->
+                <div *ngIf="c2.children && c2.children.length > 0" class="ps-4 border-start border-1 border-success mt-1">
+                  <div *ngFor="let c3 of c2.children" class="span-node-child p-2 rounded border bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                      <span class="badge bg-success me-2">{{ c3.serviceName }}</span>
+                      <span class="small fw-bold">{{ c3.spanName }}</span>
+                    </div>
+                    <span class="badge bg-light text-dark">{{ c3.durationMs }} ms</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

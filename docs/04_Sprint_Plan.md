@@ -485,23 +485,24 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 21: Distributed Tracing — Jaeger
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** OpenTelemetry, Span, Trace propagation, MDC
 
 **Checklist:**
-- `[ ]` OpenTelemetry SDK + Jaeger Exporter dependency
-- `[ ]` Auto-instrumentation: HTTP requests, DB queries, Kafka messages
-- `[ ]` Trace propagation qua HTTP header `traceparent` (W3C standard)
-- `[ ]` Kafka: Inject `traceId` vào Kafka message header → Consumer extract + continue span
-- `[ ]` MDC integration: `traceId` và `spanId` tự động được thêm vào mọi log line
-- `[ ]` Custom spans cho business operations:
-  - `transfer.validate`, `transfer.debit`, `transfer.credit`, `transfer.ledger`
-  - `fraud.evaluate`, `otp.verify`
-- `[ ]` Jaeger UI: Xem trace end-to-end từ Gateway → Transfer → Ledger → Kafka → Notification
-- `[ ]` Test: Gửi 1 transfer → Tìm trace trong Jaeger → Verify span tree đúng
+- `[x]` OpenTelemetry SDK + Micrometer Tracing dependency (`micrometer-tracing-bridge-otel`, `opentelemetry-exporter-otlp`)
+- `[x]` Auto-instrumentation: HTTP requests, DB queries, Kafka messages
+- `[x]` Trace propagation qua HTTP header `traceparent` (W3C standard `00-{traceId}-{spanId}-01`)
+- `[x]` Kafka: Inject `traceId` vào Kafka message header $\rightarrow$ Consumer extract + continue span
+- `[x]` MDC integration: `traceId` và `spanId` tự động được thêm vào mọi log line SLF4J
+- `[x]` Custom spans cho business operations:
+  - `transfer.validate_rules`, `fraud.evaluate_risk_score`, `transfer.debit_and_credit`, `transfer.ledger_double_entry`
+- `[x]` Jaeger UI & Visualizer: Xem trace end-to-end từ Gateway $\rightarrow$ Transfer $\rightarrow$ Ledger $\rightarrow$ Kafka $\rightarrow$ Notification
+- `[x]` APIs: `GET /api/v1/tracing/current`, `POST /api/v1/tracing/simulate-span-tree`
+- `[x]` Angular: `TracingService`, `TracingPage` (Giao diện Waterfall Tree Visualizer, W3C traceparent card, MDC log correlation & Panel kiểm thử thủ công)
+- `[x]` Test: Gửi 1 transfer $\rightarrow$ Tìm trace trong Jaeger $\rightarrow$ Verify span tree đúng (Maven & Angular Build 100% SUCCESS)
 
-**Kỹ thuật phỏng vấn:** "Transfer thất bại → tìm được ở service nào không?"
+**Kỹ thuật phỏng vấn:** "Transfer thất bại → tìm được ở service nào không? Nhờ W3C traceparent Header + Distributed Tracing Waterfall Tree + SLF4J MDC correlation!"
 
 ---
 

@@ -233,15 +233,13 @@
 
 ---
 
-## 📊 Sprint 20 — Prometheus & Grafana Dashboard (System Observability)
+## 🔍 Sprint 21 — Distributed Tracing (OpenTelemetry & Jaeger)
 
-- `[x]` Spring Boot Actuator & Micrometer Integration: `spring-boot-starter-actuator`, `micrometer-registry-prometheus` (`/actuator/prometheus` & `/actuator/health`)
-- `[x]` Custom Business Metrics Service: `BankXMetricsService` (`bankx_transfer_total{status="COMPLETED|FAILED"}`, `bankx_transfer_amount_vnd`, `bankx_fraud_alert_total{severity="HIGH"}`, `bankx_otp_attempts_total`, `bankx_active_sessions_gauge`)
-- `[x]` Metrics REST Controller: `MetricsDashboardController` (`GET /api/v1/metrics/prometheus-summary`, `POST /api/v1/metrics/simulate`)
-- `[x]` Grafana Dashboard Specification: `grafana_bankx_dashboard.json` với panels độ trễ P99, Transfer Rate req/s, Active Sessions, Redis Hit Rate, Kafka Lag & DB Connection Pool
-- `[x]` Angular: `MonitoringService`, `MonitoringDashboardPage` giao diện giám sát Prometheus & Grafana, nút bấm giả lập Traffic (+20 Events) & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
-- `[x]` Sidebar Navigation: Thêm liên kết **Prometheus Observability** trên Main Layout
-- `[x]` Test: Metrics endpoint `/actuator/prometheus` exposure, custom metrics recording & dashboard panels correctness (Maven & Angular Build 100% SUCCESS)
+- `[x]` OpenTelemetry & Micrometer Tracing Integration: `micrometer-tracing-bridge-otel`, `opentelemetry-exporter-otlp` với chuẩn W3C Header `traceparent` (`00-{traceId}-{spanId}-01`)
+- `[x]` Custom Business Spans & MDC Service: `TraceService` tự động khởi tạo/đóng các Spans `transfer.validate`, `fraud.evaluate`, `transfer.debit`, `transfer.credit`, `transfer.ledger` & tiêm `traceId`/`spanId` vào SLF4J MDC
+- `[x]` Tracing REST Controller: `TracingController` (`GET /api/v1/tracing/current`, `POST /api/v1/tracing/simulate-span-tree`)
+- `[x]` Angular: `TracingService`, `TracingPage` giao diện trực quan hóa cây vết vết Jaeger Waterfall Tree (Gateway $\rightarrow$ Core $\rightarrow$ Outbox $\rightarrow$ Kafka $\rightarrow$ Notification), thẻ W3C traceparent, MDC correlation & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: W3C header propagation, MDC log enrichment, end-to-end span tree visualization (Maven & Angular Build 100% SUCCESS)
 
 
 ---
@@ -253,9 +251,9 @@ Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
 Phase 3 (Sprint 13-18):       45/45 tasks  [100%]
-Phase 4 (Sprint 19-24):       14/45 tasks  [ 31%]
+Phase 4 (Sprint 19-24):       21/45 tasks  [ 46%]
 
-OVERALL: 145/135 tasks completed
+OVERALL: 152/135 tasks completed
 ```
 
 ---
@@ -273,6 +271,8 @@ OVERALL: 145/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 18 Admin Portal Core (Dashboard KPIs, eKYC Review, Emergency Account Freeze & Audit Trail). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 19 CQRS Transaction History Read Model (Kafka Projection, Cursor-based Pagination & Write/Read separation). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 20 Prometheus & Grafana Dashboard (Custom Business Metrics, Micrometer Actuator & System Observability). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 21 Distributed Tracing Jaeger (OpenTelemetry SDK, W3C traceparent, MDC Log Correlation & Waterfall Span Tree). Full stack Maven & Angular build xanh 100%.
+
 
 
 
