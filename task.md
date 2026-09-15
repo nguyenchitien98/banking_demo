@@ -92,16 +92,15 @@
 
 ---
 
-## 💸 Sprint 07 — Transfer Core
+## 💸 Sprint 07 — Transfer Core (Internal Bank Transfer)
 
-- `[ ]` Domain: BankTransfer, TransferStatus
-- `[ ]` Flyway V6: bank_transfers
-- `[ ]` CreateTransferUseCase implementation
-- `[ ]` Validation chain: balance, status, limits
-- `[ ]` @Transactional: Debit → Credit → Ledger
-- `[ ]` API: POST /transfers, GET /transfers/:id
-- `[ ]` Angular: Transfer form (4 screens)
-- `[ ]` Test: Happy path, insufficient balance, frozen account
+- `[x]` Domain: `BankTransfer` aggregate root, `TransferStatus` (PENDING, PROCESSING, COMPLETED, FAILED), `TransferLimit`
+- `[x]` Flyway V6: `bank_transfers` table với index hỗ trợ tra cứu mã chuyển tiền & tài khoản
+- `[x]` Business Validation Chain: Kiểm tra tài khoản ACTIVE, số dư đủ, hạn mức giao dịch 1 lần & ngày (50M/500M)
+- `[x]` `@Transactional` flow: Debit sender → Credit receiver → Record Double-Entry Ledger → Evict Redis balance cache → Mark Transfer COMPLETED
+- `[x]` API: `GET /api/v1/transfers/recipient-inquiry`, `POST /api/v1/transfers/internal`, `GET /api/v1/transfers/{id}`, `GET /api/v1/transfers/accounts/{accountId}`
+- `[x]` Angular: `TransferService`, `TransfersPage` với form chuyển tiền, truy vấn tên người nhận, các nút chọn nhanh số tiền, Modal xác nhận & Biên lai giao dịch thành công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Happy path, insufficient balance, frozen account, limits exceeded (Maven & Angular Build 100% SUCCESS)
 
 ---
 

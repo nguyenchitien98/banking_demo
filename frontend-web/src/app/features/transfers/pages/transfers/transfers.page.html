@@ -1,0 +1,216 @@
+<div class="transfers-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Chuyển tiền Nội bộ BankX</h2>
+    <p class="subtitle">Chuyển tiền miễn phí 24/7 tức thì giữa các tài khoản hệ thống BankX</p>
+  </div>
+
+  <div class="transfers-grid">
+    <!-- Form & Result Main Column -->
+    <div class="main-column">
+      @if (completedTransfer) {
+        <!-- Transfer Result Card (Success Receipt) -->
+        <div class="card result-card">
+          <div class="success-icon-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h3>Giao dịch Chuyển tiền Thành công!</h3>
+          <div class="result-amount-display">
+            -{{ completedTransfer.amount | number:'1.0-0' }} VND
+          </div>
+
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span class="label">Mã giao dịch</span>
+              <span class="val font-mono">{{ completedTransfer.transferCode }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Người thụ hưởng</span>
+              <span class="val font-bold">{{ completedTransfer.targetAccountName }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Số tài khoản nhận</span>
+              <span class="val font-mono">{{ completedTransfer.targetAccountNumber }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Nội dung chuyển tiền</span>
+              <span class="val">{{ completedTransfer.description }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Phí giao dịch</span>
+              <span class="val text-success">Miễn phí (0 VND)</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Thời gian thực hiện</span>
+              <span class="val">{{ completedTransfer.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+          </div>
+
+          <div class="receipt-actions">
+            <button class="btn-secondary" (click)="resetForm()">Tạo giao dịch mới</button>
+            <button class="btn-primary" (click)="printReceipt()">Tải biên lai (PDF)</button>
+          </div>
+        </div>
+      } @else {
+        <!-- Transfer Form -->
+        <div class="card form-card">
+          <h3 class="section-title">Thông tin Giao dịch</h3>
+
+          <div class="form-group">
+            <label>1. Chọn Tài khoản trích nợ</label>
+            <select [(ngModel)]="sourceAccountId" class="input-field" (change)="onSourceAccountChange()">
+              @for (acc of accounts(); track acc.id) {
+                <option [value]="acc.id">
+                  {{ acc.accountName }} ({{ acc.accountNumber }}) — {{ acc.balance | number:'1.0-0' }} ₫
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>2. Số tài khoản người nhận (Thụ hưởng)</label>
+            <div class="input-with-action">
+              <input type="text" [(ngModel)]="targetAccountNumber" (blur)="onInquireRecipient()" class="input-field" placeholder="Nhập 10-12 số tài khoản nhận" />
+              <button class="btn-inquire-sm" (click)="onInquireRecipient()" [disabled]="inquiring">
+                {{ inquiring ? 'Đang kiểm tra...' : 'Kiểm tra' }}
+              </button>
+            </div>
+
+            @if (recipientName) {
+              <div class="recipient-found-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00875a" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>Tên người nhận: <strong>{{ recipientName }}</strong></span>
+              </div>
+            } @else if (recipientError) {
+              <div class="recipient-error-box">
+                ⚠️ {{ recipientError }}
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label>3. Số tiền chuyển (VND)</label>
+            <input type="number" [(ngModel)]="amount" class="input-field amount-input" placeholder="0" />
+
+            <div class="quick-amounts">
+              <button class="quick-btn" (click)="setAmount(100000)">100.000 ₫</button>
+              <button class="quick-btn" (click)="setAmount(500000)">500.000 ₫</button>
+              <button class="quick-btn" (click)="setAmount(1000000)">1.000.000 ₫</button>
+              <button class="quick-btn" (click)="setAmount(5000000)">5.000.000 ₫</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>4. Lời nhắn / Diễn giải nội dung</label>
+            <input type="text" [(ngModel)]="description" class="input-field" placeholder="Chuyen tien cho ban" />
+          </div>
+
+          @if (formError) {
+            <div class="error-msg">{{ formError }}</div>
+          }
+
+          <button class="btn-primary btn-submit-transfer" (click)="openConfirmModal()" [disabled]="submitting">
+            Tiếp tục (Xác nhận Giao dịch)
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Side Column: Limits & Verification Guide -->
+    <div class="side-column">
+      <!-- Limits Card -->
+      <div class="card limits-card">
+        <h3 class="section-title">Hạn mức chuyển tiền</h3>
+        <div class="limit-info-row">
+          <span class="label">Hạn mức 1 lần giao dịch</span>
+          <span class="val">50.000.000 VND</span>
+        </div>
+        <div class="limit-info-row">
+          <span class="label">Hạn mức tối đa/ngày</span>
+          <span class="val">500.000.000 VND</span>
+        </div>
+        <div class="limit-info-row">
+          <span class="label">Phí chuyển tiền</span>
+          <span class="val text-success font-bold">MIỄN PHÍ</span>
+        </div>
+      </div>
+
+      <!-- Verification Guide Panel (Per AGENTS.md Rule) -->
+      <div class="verification-panel card">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7b2d8b" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 07)</h4>
+        </div>
+
+        <div class="panel-body">
+          <div class="test-scenario">
+            <span class="scenario-title">1. Truy vấn Tên người thụ hưởng (Inquiry):</span>
+            <p>Nhập số tài khoản thụ hưởng và bấm <strong>"Kiểm tra"</strong> để gọi <code>GET /api/v1/transfers/recipient-inquiry</code> lấy tên chính xác.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">2. Chuỗi Kiểm tra Điều kiện (Validation Chain):</span>
+            <p>Hệ thống tự động kiểm tra: Số dư khả dụng &gt;= Số tiền, Trạng thái tài khoản = ACTIVE, Số tiền &lt;= Hạn mức ngày 500M.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">3. Hạch toán Nguyên tố (Atomic Transaction):</span>
+            <p>Xử lý đồng thời trích nợ, ghi có, ghi sổ kép `LedgerEntry` và tạo biên lai `BankTransfer` trong 1 <code>&#64;Transactional</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  @if (showConfirmModal) {
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Xác nhận Thông tin Chuyển tiền</h3>
+          <button class="close-btn" (click)="closeConfirmModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="confirm-box">
+            <div class="confirm-row">
+              <span class="label">Từ tài khoản</span>
+              <span class="val font-mono">{{ getSourceAccountNumber() }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Đến tài khoản</span>
+              <span class="val font-mono">{{ targetAccountNumber }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Tên người nhận</span>
+              <span class="val font-bold text-primary">{{ recipientName }}</span>
+            </div>
+            <div class="confirm-row highlighted">
+              <span class="label">Số tiền chuyển</span>
+              <span class="val amount-val">{{ amount | number:'1.0-0' }} VND</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Nội dung</span>
+              <span class="val">{{ description }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeConfirmModal()">Sửa lại</button>
+          <button class="btn-primary" (click)="submitTransfer()" [disabled]="submitting">
+            {{ submitting ? 'Đang thực thi giao dịch...' : 'Xác nhận Chuyển tiền' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

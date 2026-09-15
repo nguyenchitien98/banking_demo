@@ -178,23 +178,24 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 07: Transfer Module — Core Flow
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
-**Kỹ thuật học:** Saga stub, @Transactional, Business validation chain
+**Kỹ thuật học:** Saga stub, @Transactional, Business validation chain, Transfer Limit Checks
 
 **Checklist:**
-- `[ ]` Domain: `BankTransfer` aggregate, `TransferStatus`, `TransferType` (INTERNAL, INTERBANK)
-- `[ ]` Flyway V6: `bank_transfers`, `transfer_limits` tables
-- `[ ]` `CreateTransferUseCase` implementation
-- `[ ]` Business validation chain: Balance check → Account status → Daily limit → Amount limit
-- `[ ]` @Transactional: Debit → Credit → Ledger entries (atomic)
-- `[ ]` Transfer limits: Max 200M/transaction, Max 500M/day (configurable per customer tier)
-- `[ ]` APIs:
-  - `POST /api/transfers` — Tạo transfer (Internal)
-  - `GET /api/transfers/{id}` — Transfer detail
-  - `GET /api/transfers/history` — Transfer history
-- `[ ]` Angular: Transfer form (4 screens flow)
-- `[ ]` Test: Happy path, insufficient balance, account frozen, amount over limit
+- `[x]` Domain: `BankTransfer` aggregate, `TransferStatus`, `TransferType` (INTERNAL, NAPAS247)
+- `[x]` Flyway V6: `bank_transfers` table
+- `[x]` `TransferApplicationService` implementation
+- `[x]` Business validation chain: Balance check → Account status → Daily limit → Amount limit
+- `[x]` `@Transactional`: Debit → Credit → Ledger entries (atomic)
+- `[x]` Transfer limits: Max 50M/transaction, Max 500M/day (lưu trữ trong `transfer_limits`)
+- `[x]` APIs:
+  - `GET /api/v1/transfers/recipient-inquiry` — Truy vấn tên người thụ hưởng
+  - `POST /api/v1/transfers/internal` — Tạo lệnh chuyển tiền nội bộ
+  - `GET /api/v1/transfers/{id}` — Transfer detail
+  - `GET /api/v1/transfers/accounts/{accountId}` — Transfer history
+- `[x]` Angular: `TransferService`, `TransfersPage` với form 4 bước (Nhập thông tin, Truy vấn tên, Modal xác nhận, Biên lai chuyển tiền thành công)
+- `[x]` Test: Happy path, insufficient balance, account frozen, amount over limit (Maven & Angular Build 100% SUCCESS)
 
 ---
 
