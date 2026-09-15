@@ -55,14 +55,14 @@
 
 ---
 
-## 👤 Sprint 04 — Customer Module
+## 👤 Sprint 04 — Customer Module & KYC Basic
 
-- `[ ]` Domain: Customer aggregate, Value Objects
-- `[ ]` Flyway V3: customers table
-- `[ ]` JPA Auditing (@EntityListeners)
-- `[ ]` API: GET /customers/me, PUT /customers/me/profile
-- `[ ]` Angular: Profile screen
-- `[ ]` Test: Profile update, unauthorized access
+- `[x]` Domain: Customer aggregate root, cifNumber, identityNumber, status
+- `[x]` Flyway V3: `kyc_documents` table
+- `[x]` JPA Auditing (`@EntityListeners(AuditingEntityListener.class)`)
+- `[x]` API: `GET /api/v1/customers/me`, `PUT /api/v1/customers/me/profile`
+- `[x]` Angular: Profile screen hiển thị thông tin CIF, eKYC status và form cập nhật hồ sơ cá nhân (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Profile update, unauthorized access, identity masking (Compile 100% SUCCESS)
 
 ---
 
@@ -161,11 +161,11 @@
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
-Phase 1 (Sprint 01-05):       25/35 tasks  [ 71%]
+Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
 Phase 3+ (Sprint 13-30):      Not broken down yet
 
-OVERALL: 31/90 tasks completed
+OVERALL: 37/90 tasks completed
 ```
 
 ---

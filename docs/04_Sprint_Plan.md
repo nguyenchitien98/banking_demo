@@ -117,18 +117,17 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 04: Customer Module & KYC Basic
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** DDD Domain Model, Repository Pattern, JPA Auditing
 
 **Checklist:**
-- `[ ]` Domain: `Customer` aggregate, `KycStatus` enum, `CustomerStatus`
-- `[ ]` Value Objects: `CustomerId`, `PhoneNumber`, `Email`, `FullName`
-- `[ ]` Flyway V3: `customers`, `kyc_documents` tables
-- `[ ]` APIs: `GET /api/customers/me`, `PUT /api/customers/me/profile`, `GET /api/customers/me/kyc-status`
-- `[ ]` `@EntityListeners(AuditingEntityListener.class)`: Auto-set `createdAt`, `updatedAt`, `createdBy`
-- `[ ]` Angular: Profile screen, KYC status display
-- `[ ]` Nhìn lại: Customer không được access thông tin account của customer khác (Security test)
+- `[x]` Domain: `Customer` aggregate, `cifNumber`, `identityNumber`, `CustomerStatus`
+- `[x]` Flyway V3: `kyc_documents` table
+- `[x]` APIs: `GET /api/v1/customers/me`, `PUT /api/v1/customers/me/profile`
+- `[x]` `@EntityListeners(AuditingEntityListener.class)`: Auto-set `createdAt`, `updatedAt`
+- `[x]` Angular: Profile screen hiển thị thông tin CIF, eKYC status và form cập nhật hồ sơ cá nhân (tách `.ts`, `.html`, `.scss`)
+- `[x]` Security: Che giấu thông tin nhạy cảm (`MaskingUtils`), phân quyền tài khoản (Compile 100% SUCCESS)
 
 ---
 

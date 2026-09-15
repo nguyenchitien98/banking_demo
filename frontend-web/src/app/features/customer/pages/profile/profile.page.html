@@ -1,0 +1,105 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="card-header">
+      <div class="avatar-wrapper">
+        <span class="avatar-icon">👤</span>
+      </div>
+      <div class="user-titles">
+        <h2>{{ profile()?.fullName || 'Khách Hàng BankX' }}</h2>
+        <span class="cif-badge">Mã CIF: {{ profile()?.cifNumber }}</span>
+        <span
+          class="kyc-badge"
+          [class.kyc-verified]="profile()?.status === 'VERIFIED'"
+        >
+          {{ profile()?.status === 'VERIFIED' ? '✓ Đã xác thực KYC (eKYC)' : 'Chưa xác thực' }}
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="successMessage()" class="alert-success">
+      <span>✅ {{ successMessage() }}</span>
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="onSaveProfile()" class="profile-form">
+      <div class="section-title">Thông Tin Định Danh (Bảo Mật)</div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Số CCCD / Định danh</label>
+          <div class="info-value readonly">{{ profile()?.identityNumber }}</div>
+        </div>
+
+        <div class="info-item">
+          <label>Số Điện Thoại</label>
+          <div class="info-value readonly">{{ profile()?.phone }}</div>
+        </div>
+
+        <div class="info-item">
+          <label>Địa Chỉ Email</label>
+          <div class="info-value readonly">{{ profile()?.email }}</div>
+        </div>
+
+        <div class="info-item">
+          <label>Ngày Sinh</label>
+          <input
+            *ngIf="isEditing()"
+            type="date"
+            formControlName="dateOfBirth"
+            class="form-input"
+          />
+          <div *ngIf="!isEditing()" class="info-value">
+            {{ profile()?.dateOfBirth || 'Chưa cập nhật' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Thông Tin Liên Lạc Cá Nhân</div>
+
+      <div class="form-group">
+        <label>Họ và Tên</label>
+        <input
+          *ngIf="isEditing()"
+          type="text"
+          formControlName="fullName"
+          class="form-input"
+        />
+        <div *ngIf="!isEditing()" class="info-value font-bold">
+          {{ profile()?.fullName }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Địa Chỉ Thường Trú / Liên Lạc</label>
+        <textarea
+          *ngIf="isEditing()"
+          formControlName="address"
+          rows="3"
+          class="form-input"
+        ></textarea>
+        <div *ngIf="!isEditing()" class="info-value">
+          {{ profile()?.address }}
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button
+          *ngIf="!isEditing()"
+          type="button"
+          class="btn-edit"
+          (click)="toggleEdit()"
+        >
+          ✏️ Chỉnh Sửa Hồ Sơ
+        </button>
+
+        <ng-container *ngIf="isEditing()">
+          <button type="button" class="btn-cancel" (click)="toggleEdit()">
+            Hủy
+          </button>
+          <button type="submit" class="btn-save" [disabled]="isLoading()">
+            Lưu Thay Đổi
+          </button>
+        </ng-container>
+      </div>
+    </form>
+  </div>
+</div>
