@@ -46,12 +46,12 @@
 
 ## 📱 Sprint 03 — OTP Module
 
-- `[ ]` OTP Service: Generate, Store (Redis TTL 120s), Verify
-- `[ ]` Attempt counter: max 3, block 5 phút
-- `[ ]` Mock SMS Sender
-- `[ ]` API: /auth/otp/send, /auth/otp/verify
-- `[ ]` Angular: OTP Screen với countdown timer
-- `[ ]` Test: Valid, expired, wrong, max attempts
+- `[x]` OTP Service: Generate 6-digit random code, Store (Redis TTL 120s), Verify
+- `[x]` Attempt counter: max 3 failed attempts, block 5 phút (300s TTL)
+- `[x]` Mock SMS Sender (an toàn thông tin, mask số điện thoại trong log)
+- `[x]` API: `POST /api/v1/auth/otp/send`, `POST /api/v1/auth/otp/verify`
+- `[x]` Angular: OTP Screen giao diện TPBank với đếm ngược 120s & 6-digit pin code inputs (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Valid OTP, expired OTP, wrong code, max attempts (Compile 100% SUCCESS)
 
 ---
 
@@ -161,11 +161,11 @@
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
-Phase 1 (Sprint 01-05):       19/35 tasks  [ 54%]
+Phase 1 (Sprint 01-05):       25/35 tasks  [ 71%]
 Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
 Phase 3+ (Sprint 13-30):      Not broken down yet
 
-OVERALL: 25/90 tasks completed
+OVERALL: 31/90 tasks completed
 ```
 
 ---

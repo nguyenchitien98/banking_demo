@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  *   <li>{@code @RequestMapping("/api/v1/auth")}: Đặt tiền tố API URL cho toàn bộ các endpoint thuộc Auth Module.</li>
  * </ul>
  * </p>
-
+ *
  * @author BankX Engineering Team
  * @version 1.0
  */

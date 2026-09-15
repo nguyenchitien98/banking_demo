@@ -1,0 +1,101 @@
+<div class="otp-container">
+  <div class="otp-card">
+    <div class="brand-header">
+      <div class="otp-icon-box">
+        <span class="icon">💬</span>
+      </div>
+      <h2>Xác Thực OTP</h2>
+      <p class="subtitle">
+        Mã xác thực 6 chữ số đã được gửi tới số điện thoại<br />
+        <strong>{{ maskedPhone() }}</strong>
+      </p>
+    </div>
+
+    <form [formGroup]="otpForm" (ngSubmit)="onVerify()" class="otp-form">
+      <div *ngIf="errorMessage()" class="alert-error">
+        <span class="alert-icon">⚠️</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+
+      <div *ngIf="successMessage()" class="alert-success">
+        <span class="alert-icon">✅</span>
+        <span>{{ successMessage() }}</span>
+      </div>
+
+      <div class="digits-wrapper">
+        <input
+          id="otp-digit-1"
+          type="text"
+          maxlength="1"
+          formControlName="digit1"
+          (keyup)="onInputKeyUp($event, 2)"
+          autocomplete="off"
+        />
+        <input
+          id="otp-digit-2"
+          type="text"
+          maxlength="1"
+          formControlName="digit2"
+          (keyup)="onInputKeyUp($event, 3)"
+          autocomplete="off"
+        />
+        <input
+          id="otp-digit-3"
+          type="text"
+          maxlength="1"
+          formControlName="digit3"
+          (keyup)="onInputKeyUp($event, 4)"
+          autocomplete="off"
+        />
+        <input
+          id="otp-digit-4"
+          type="text"
+          maxlength="1"
+          formControlName="digit4"
+          (keyup)="onInputKeyUp($event, 5)"
+          autocomplete="off"
+        />
+        <input
+          id="otp-digit-5"
+          type="text"
+          maxlength="1"
+          formControlName="digit5"
+          (keyup)="onInputKeyUp($event, 6)"
+          autocomplete="off"
+        />
+        <input
+          id="otp-digit-6"
+          type="text"
+          maxlength="1"
+          formControlName="digit6"
+          (keyup)="onInputKeyUp($event, 7)"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="timer-box">
+        <span *ngIf="!isExpired()" class="timer-text">
+          Mã có hiệu lực trong <strong class="timer-countdown">{{ formatTime(countdown()) }}</strong>
+        </span>
+        <span *ngIf="isExpired()" class="timer-expired">Mã OTP đã hết hiệu lực</span>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="isLoading() || otpForm.invalid">
+        <span *ngIf="!isLoading()">XÁC NHẬN</span>
+        <span *ngIf="isLoading()">Đang kiểm tra...</span>
+      </button>
+
+      <div class="resend-box">
+        <span>Chưa nhận được mã?</span>
+        <button
+          type="button"
+          class="btn-resend"
+          [disabled]="!isExpired() || isLoading()"
+          (click)="resendOtp()"
+        >
+          Gửi lại mã OTP
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

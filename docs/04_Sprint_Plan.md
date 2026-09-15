@@ -101,18 +101,18 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 03: OTP Module
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Redis TTL, OTP security, Spring Events
 
 **Checklist:**
-- `[ ]` OTP Service: Generate (6 chữ số random), Store (Redis TTL 120s), Verify
-- `[ ]` Redis key pattern: `otp:{userId}:{purpose}` (LOGIN, TRANSFER, CHANGE_PASSWORD)
-- `[ ]` Attempt counter: `otp:attempts:{userId}:{purpose}` (max 3, block 5 phút)
-- `[ ]` Mock SMS sender (log ra console ở dev, Twilio trong prod)
-- `[ ]` API: `POST /api/auth/otp/send`, `POST /api/auth/otp/verify`
-- `[ ]` Angular: OTP screen với 6-digit input, countdown timer
-- `[ ]` Unit Tests: Valid OTP, expired OTP, wrong OTP, max attempts exceeded
+- `[x]` OTP Service: Generate (6 chữ số random an toàn), Store (Redis TTL 120s), Verify
+- `[x]` Redis key pattern: `otp:{purpose}:{phone}` (LOGIN, TRANSFER, PROFILE_UPDATE)
+- `[x]` Attempt counter: `otp_attempts:{purpose}:{phone}` (max 3, block 5 phút)
+- `[x]` Mock SMS sender (an toàn thông tin, mask số điện thoại trong log)
+- `[x]` API: `POST /api/v1/auth/otp/send`, `POST /api/v1/auth/otp/verify`
+- `[x]` Angular: OTP screen giao diện TPBank với 6-digit input auto focus, countdown timer 120s (tách `.ts`, `.html`, `.scss`)
+- `[x]` Unit Tests & Build verification: Valid OTP, expired OTP, wrong OTP, max attempts exceeded (Compile 100% SUCCESS)
 
 ---
 
