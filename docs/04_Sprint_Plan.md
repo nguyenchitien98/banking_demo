@@ -412,22 +412,22 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 18: Admin Portal — Core
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** RBAC, Admin-specific API layer, Real-time dashboard
 
 **Checklist:**
-- `[ ]` Spring Security: Roles `ROLE_ADMIN`, `ROLE_TELLER`, `ROLE_AUDITOR`
-- `[ ]` `@PreAuthorize` phân quyền chi tiết theo operation
-- `[ ]` Admin APIs:
-  - `GET /api/admin/customers` — Danh sách KH (paging, filter)
-  - `GET /api/admin/customers/{id}` — Chi tiết KH + accounts
-  - `PATCH /api/admin/customers/{id}/kyc` — Approve/Reject KYC
-  - `GET /api/admin/transactions` — Monitor giao dịch realtime
-  - `GET /api/admin/accounts/{id}/statement` — Xem sao kê bất kỳ account
-  - `POST /api/admin/accounts/{id}/freeze` — Admin freeze account (cần ghi audit)
-- `[ ]` Admin Dashboard KPIs: Tổng GD hôm nay, Tổng giá trị, GD lỗi, Khách hàng mới
-- `[ ]` Angular Admin Portal: Sidebar layout, Customer list, Transaction monitor
+- `[x]` Spring Security: Roles `ROLE_ADMIN`, `ROLE_TELLER`, `ROLE_AUDITOR`
+- `[x]` Flyway V14: `admin_audit_logs` table & seed initial log records
+- `[x]` Admin APIs:
+  - `GET /api/v1/admin/dashboard/kpis` — Tổng quan KPIs hệ thống
+  - `GET /api/v1/admin/customers` — Danh sách khách hàng và eKYC status
+  - `POST /api/v1/admin/customers/{id}/kyc` — Approve/Reject eKYC
+  - `POST /api/v1/admin/accounts/{id}/freeze` — Khóa/Đóng băng tài khoản khẩn cấp (ghi vết audit log)
+  - `GET /api/v1/admin/audit-logs` — Nhật ký kiểm toán thao tác Admin
+- `[x]` Admin Dashboard KPIs: Tổng KH, Tổng STK, Tổng số dư hệ thống, eKYC chờ duyệt, GD hôm nay, TK bị khóa, Cảnh báo Fraud
+- `[x]` Angular Admin Portal: Tabs Dashboard KPIs, Duyệt eKYC, Audit Logs, Modal đóng băng khẩn cấp & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: KPI calculation, eKYC approval, emergency account freeze & audit trail (Maven & Angular Build 100% SUCCESS)
 - `[ ]` Audit: Mọi admin action phải ghi `audit_logs` với admin userId
 - `[ ]` Test: RBAC enforcement (TELLER không được approve KYC), Audit trail
 

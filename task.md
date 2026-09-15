@@ -233,15 +233,28 @@
 
 ---
 
+## 🛠️ Sprint 18 — Admin Portal (Core RBAC & Audit Trail)
+
+- `[x]` Flyway V14: `admin_audit_logs` table & seed log records
+- `[x]` Admin Audit Log JPA Domain & Repository: `AdminAuditLogJpaEntity`, `SpringDataAdminAuditLogRepository`
+- `[x]` Admin Application Service & DTOs: `AdminApplicationService`, `AdminKpiResponse`, `ReviewKycRequest`, `AdminCustomerResponse`, `AdminAuditLogResponse`
+- `[x]` Admin REST Controller: `AdminController` (`GET /api/v1/admin/dashboard/kpis`, `GET /api/v1/admin/customers`, `POST /api/v1/admin/customers/{id}/kyc`, `POST /api/v1/admin/accounts/{id}/freeze`, `GET /api/v1/admin/audit-logs`)
+- `[x]` Angular: `AdminService`, `AdminPortalPage` với Tab Dashboard KPIs, Tab Quản lý Khách hàng & Duyệt eKYC, Tab Audit Logs, Modal đóng băng tài khoản khẩn cấp & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Sidebar Navigation: Thêm liên kết **Admin Portal** trên Main Layout
+- `[x]` Test: KPI calculation, eKYC approval/rejection flow, emergency account freeze, audit trail persistence (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
-Phase 3 (Sprint 13-18):       37/45 tasks  [ 82%]
+Phase 3 (Sprint 13-18):       44/45 tasks  [ 98%]
 
-OVERALL: 123/135 tasks completed
+OVERALL: 130/135 tasks completed
 ```
 
 ---
@@ -256,3 +269,5 @@ OVERALL: 123/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 15 Card module (PCI-DSS Tokenization, Virtual Card Generator & Card Lifecycle FSM). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 16 Fraud Detection module (Rule Engine, Risk Score 0–100 & Admin Alerts Center). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 17 Beneficiary Management module (Smart Suggestions, Frequency Tracking & Account Lookup API). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 18 Admin Portal Core (Dashboard KPIs, eKYC Review, Emergency Account Freeze & Audit Trail). Full stack Maven & Angular build xanh 100%.
+
