@@ -1,0 +1,296 @@
+<div class="cards-container">
+  <!-- Dynamic Purple Header Banner -->
+  <div class="header-banner">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+      </div>
+      <div>
+        <h1>Quản Lý Thẻ & Thẻ Ảo (PCI-DSS Tokenization)</h1>
+        <p>Phát hành thẻ ảo tức thì, mã hóa PAN Token an toàn và quản lý máy trạng thái hữu hạn FSM (ACTIVE ↔ FROZEN → BLOCKED)</p>
+      </div>
+      <div class="header-actions">
+        <button (click)="showIssueModal = true" class="btn-issue">
+          <span>➕ Phát Hành Thẻ Ảo Mới</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <span>⚠️ {{ errorMessage }}</span>
+  </div>
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span>🎉 {{ successMessage }}</span>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <div class="cards-grid-layout">
+    <!-- Left: Cards Carousel List -->
+    <div class="cards-list-section">
+      <h3>Danh Sách Thẻ Ngân Hàng ({{ cards.length }})</h3>
+
+      <div *ngIf="cards.length === 0" class="empty-cards">
+        <p>Bạn chưa sở hữu thẻ nào. Vui lòng bấm nút "Phát Hành Thẻ Ảo Mới" để trải nghiệm dịch vụ.</p>
+      </div>
+
+      <div class="cards-stack">
+        <div 
+          *ngFor="let card of cards" 
+          (click)="selectCard(card)" 
+          class="bank-card-visual" 
+          [class.selected]="selectedCard?.id === card.id"
+          [class.card-frozen]="card.status === 'FROZEN'"
+          [class.card-blocked]="card.status === 'BLOCKED'"
+          [class.brand-visa]="card.cardBrand === 'VISA'"
+          [class.brand-mc]="card.cardBrand === 'MASTERCARD'">
+          
+          <div class="card-top">
+            <span class="bank-name">BankX Digital</span>
+            <span class="card-type-badge">{{ card.cardType }}</span>
+          </div>
+
+          <div class="chip-container">
+            <div class="sim-chip"></div>
+            <span class="contactless-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+              </svg>
+            </span>
+          </div>
+
+          <div class="card-number">{{ card.maskedPan }}</div>
+
+          <div class="card-bottom">
+            <div class="holder-info">
+              <span class="label">CHỦ THẺ / HOLDER</span>
+              <span class="name">{{ card.cardHolderName }}</span>
+            </div>
+            <div class="expiry-info">
+              <span class="label">EXPIRES</span>
+              <span class="date">{{ card.expiryMonth }}/{{ card.expiryYear }}</span>
+            </div>
+            <div class="brand-logo">
+              {{ card.cardBrand }}
+            </div>
+          </div>
+
+          <!-- Status Overlay Badge -->
+          <div class="status-overlay-badge" [class.badge-active]="card.status === 'ACTIVE'" [class.badge-frozen]="card.status === 'FROZEN'" [class.badge-blocked]="card.status === 'BLOCKED'">
+            {{ card.status }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Card Controls & FSM Actions -->
+    <div class="card-controls-section" *ngIf="selectedCard">
+      <div class="card card-details-panel">
+        <div class="panel-title-row">
+          <h3>Chi Tiết & Quản Lý Thẻ [{{ selectedCard.id }}]</h3>
+          <span class="status-pill" [class.pill-active]="selectedCard.status === 'ACTIVE'" [class.pill-frozen]="selectedCard.status === 'FROZEN'" [class.pill-blocked]="selectedCard.status === 'BLOCKED'">
+            {{ selectedCard.status }}
+          </span>
+        </div>
+
+        <div class="security-token-box">
+          <div class="token-header">
+            <span class="shield-icon">🛡️ PCI-DSS Tokenization Standard</span>
+          </div>
+          <div class="token-body">
+            <div class="token-row">
+              <span class="label">Mã Thẻ Ẩn (Masked PAN):</span>
+              <strong class="masked-value">{{ selectedCard.maskedPan }}</strong>
+            </div>
+            <div class="token-row">
+              <span class="label">PAN Token CSDL:</span>
+              <span class="token-code">{{ selectedCard.panToken }}</span>
+            </div>
+            <div class="token-row">
+              <span class="label">Tài Khoản Liên Kết:</span>
+              <strong class="acc-link">{{ selectedCard.accountNumber }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Limits Section -->
+        <div class="limits-box margin-top-20">
+          <div class="limits-header">
+            <h4>Hạn Mức Thanh Toán Online</h4>
+            <button (click)="openLimitModal()" [disabled]="selectedCard.status === 'BLOCKED'" class="btn-edit-limits">✏️ Đổi Hạn Mức</button>
+          </div>
+          <div class="limits-progress">
+            <div class="limit-row">
+              <span>1 Giao dịch tối đa:</span>
+              <strong>{{ selectedCard.spendingLimit | number:'1.0-0' }} VND</strong>
+            </div>
+            <div class="limit-row">
+              <span>Tổng thanh toán/ngày:</span>
+              <strong>{{ selectedCard.dailyLimit | number:'1.0-0' }} VND</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- FSM Control Buttons -->
+        <div class="fsm-actions-box margin-top-24">
+          <h4>Điều Khiển Máy Trạng Thái FSM</h4>
+          <div class="actions-grid">
+            <button 
+              (click)="toggleFreeze()" 
+              [disabled]="loading || selectedCard.status === 'BLOCKED'" 
+              class="btn-action btn-freeze"
+              [class.btn-unfreeze]="selectedCard.status === 'FROZEN'">
+              <span>{{ selectedCard.status === 'FROZEN' ? '🔓 Mở Khóa Thẻ (ACTIVE)' : '❄️ Tạm Khóa Thẻ (FROZEN)' }}</span>
+            </button>
+
+            <button 
+              (click)="showBlockModal = true" 
+              [disabled]="loading || selectedCard.status === 'BLOCKED'" 
+              class="btn-action btn-block">
+              <span>⛔ Báo Mất / Khóa Vĩnh Viễn (BLOCKED)</span>
+            </button>
+          </div>
+
+          <p class="fsm-note margin-top-12">
+            ⚠️ <em>Lưu ý FSM:</em> Trạng thái <strong>BLOCKED</strong> (Khóa vĩnh viễn) là thao tác không thể khôi phục để đảm bảo an toàn tài sản tuyệt đối khi mất thẻ.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISSUE VIRTUAL CARD MODAL -->
+  <div *ngIf="showIssueModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>➕ Phát Hành Thẻ Ảo (Virtual Card) Tức Thì</h3>
+        <button (click)="showIssueModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tài khoản thanh toán liên kết:</label>
+          <select [(ngModel)]="newCardAccount" class="select-input">
+            <option *ngFor="let acc of accounts" [value]="acc.accountNumber">
+              STK: {{ acc.accountNumber }} (Số dư: {{ acc.balance | number:'1.0-0' }} VND)
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Thương hiệu Thẻ:</label>
+          <div class="brand-options">
+            <label class="brand-radio">
+              <input type="radio" name="brand" value="VISA" [(ngModel)]="newCardBrand">
+              <span>💳 VISA Virtual</span>
+            </label>
+            <label class="brand-radio">
+              <input type="radio" name="brand" value="MASTERCARD" [(ngModel)]="newCardBrand">
+              <span>💳 MasterCard Virtual</span>
+            </label>
+            <label class="brand-radio">
+              <input type="radio" name="brand" value="NAPAS" [(ngModel)]="newCardBrand">
+              <span>💳 Napas Virtual</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Hạn mức giao dịch tối đa (VND):</label>
+          <input type="number" [(ngModel)]="newCardLimit" class="amount-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showIssueModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="issueVirtualCard()" [disabled]="loading" class="btn-primary">
+          <span *ngIf="!loading">Kích Hoạt Thẻ Ảo Tức Thời</span>
+          <span *ngIf="loading">Đang Đóng Gói Token...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT LIMITS MODAL -->
+  <div *ngIf="showLimitModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ Cài Đặt Hạn Mức Giao Dịch Thẻ</h3>
+        <button (click)="showLimitModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Hạn mức 1 giao dịch online (VND):</label>
+          <input type="number" [(ngModel)]="editSpendingLimit" class="amount-input">
+        </div>
+        <div class="form-group">
+          <label>Hạn mức tổng giao dịch theo ngày (VND):</label>
+          <input type="number" [(ngModel)]="editDailyLimit" class="amount-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showLimitModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="saveLimits()" [disabled]="loading" class="btn-primary">Lưu Hạn Mức</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCK CONFIRM MODAL -->
+  <div *ngIf="showBlockModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="text-danger">🚨 Xác Nhận Khóa Thẻ Vĩnh Viễn (BLOCKED)</h3>
+        <button (click)="showBlockModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn khóa vĩnh viễn thẻ <strong>{{ selectedCard?.maskedPan }}</strong> không?</p>
+        <p class="text-danger">⚠️ <strong>Cảnh báo:</strong> Thao tác này sẽ hủy hoàn toàn thẻ và PAN Token tương ứng. Bạn KHÔNG THỂ mở lại thẻ sau khi đã khóa vĩnh viễn.</p>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showBlockModal = false" class="btn-cancel">Hủy Bỏ</button>
+        <button (click)="confirmBlockCard()" [disabled]="loading" class="btn-danger-confirm">Đồng Ý Khóa Vĩnh Viễn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANDATORY VERIFICATION GUIDE PANEL (RULE[AGENTS.md]) -->
+  <div class="card verification-panel margin-top-30">
+    <div class="panel-header">
+      <span class="icon">🧪</span>
+      <h3>Hướng Dẫn Kiểm Thử Thủ Công — Sprint 15: Card Module (PCI-DSS Tokenization & FSM)</h3>
+    </div>
+    <div class="panel-body">
+      <p>Khu vực này hỗ trợ các kỹ sư kiểm thử xác minh nguyên tắc mã hóa tokenization thẻ và máy trạng thái hữu hạn FSM:</p>
+      
+      <div class="test-scenarios">
+        <div class="scenario-item">
+          <strong>Kịch bản 1: Phát hành Thẻ Ảo mới (Virtual Card Issuance)</strong>
+          <ul>
+            <li>Bấm nút <strong>"➕ Phát Hành Thẻ Ảo Mới"</strong>, chọn loại thẻ (VISA/MasterCard) và điền hạn mức.</li>
+            <li><strong>Kỳ vọng:</strong> Hệ thống tự động tạo PAN 16 chữ số ảo, tạo che mờ <code>maskedPan</code> (4000 12** **** XXXX) và lưu CSDL dạng <code>panToken</code>. Số PAN gốc không lưu plain-text.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 2: Máy Trạng Thái FSM (Tạm Khóa ↔ Mở Khóa)</strong>
+          <ul>
+            <li>Chọn thẻ đang ở trạng thái <code>ACTIVE</code> và bấm nút <strong>"❄️ Tạm Khóa Thẻ"</strong>.</li>
+            <li><strong>Kỳ vọng:</strong> Thẻ chuyển sang trạng thái <code>FROZEN</code>. Giao diện đổi sang xám/băng giá. Bấm tiếp <strong>"🔓 Mở Khóa Thẻ"</strong> để khôi phục về <code>ACTIVE</code>.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 3: Khóa Vĩnh Viễn (BLOCKED State Invariance)</strong>
+          <ul>
+            <li>Bấm nút <strong>"⛔ Báo Mất / Khóa Vĩnh Viễn"</strong> và xác nhận modal.</li>
+            <li><strong>Kỳ vọng:</strong> Thẻ chuyển vĩnh viễn sang trạng thái <code>BLOCKED</code>. Tất cả các nút thay đổi hạn mức hoặc mở khóa bị vô hiệu hóa hoàn toàn.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

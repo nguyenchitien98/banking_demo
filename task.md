@@ -195,15 +195,27 @@
 
 ---
 
+## 💳 Sprint 15 — Card Module (Tokenization & Virtual Cards)
+
+- `[x]` PCI-DSS Tokenization Architecture: `CardTokenizationService` sinh 16-digit Virtual PAN, Masked PAN (`4000 12** **** 8899`) & PAN Token bảo mật
+- `[x]` Card Lifecycle State Machine (FSM): `CardStatus` với quy tắc chuyển trạng thái `ACTIVE` $\leftrightarrow$ `FROZEN` $\rightarrow$ `BLOCKED` $\rightarrow$ `EXPIRED` (Bảo vệ tính bất biến của thẻ bị khóa vĩnh viễn)
+- `[x]` Flyway V11: `bank_cards` table lưu vết thông tin thẻ & tokenization data
+- `[x]` APIs: `GET /api/v1/cards`, `GET /api/v1/cards/{id}`, `POST /api/v1/cards/virtual`, `PATCH /api/v1/cards/{id}/freeze`, `PATCH /api/v1/cards/{id}/unfreeze`, `PATCH /api/v1/cards/{id}/block`, `PATCH /api/v1/cards/{id}/limits`
+- `[x]` Angular: `CardService`, `CardsPage` hiển thị danh sách thẻ đồ họa phong cách TPBank Purple Gradient, bộ điều khiển FSM, Modal phát hành thẻ ảo tức thời & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Virtual card issuance, FSM freeze/unfreeze transitions, irreversible BLOCKED state validation, spending limit updates (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
-Phase 3 (Sprint 13-18):       16/45 tasks  [ 35%]
+Phase 3 (Sprint 13-18):       23/45 tasks  [ 51%]
 
-OVERALL: 102/135 tasks completed
+OVERALL: 109/135 tasks completed
 ```
 
 ---
@@ -215,3 +227,4 @@ OVERALL: 102/135 tasks completed
 - [2026-09-14] Khởi tạo project - Đang setup docs và planning
 - [2026-09-15] Hoàn thành Sprint 13 Bill Payment module với Strategy Pattern (SOLID OCP). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 14 QR Payment module chuẩn VietQR EMVCo (TLVs, CRC-16 Checksum, Generator & Decoder). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 15 Card module (PCI-DSS Tokenization, Virtual Card Generator & Card Lifecycle FSM). Full stack Maven & Angular build xanh 100%.

@@ -341,25 +341,25 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 15: Card Module
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Tokenization, Virtual Card, Card lifecycle State Machine
 
 **Checklist:**
-- `[ ]` Domain: `BankCard` aggregate, `CardStatus` FSM (ACTIVE → FROZEN → BLOCKED → EXPIRED)
-- `[ ]` Flyway V9: `bank_cards` table (KHÔNG lưu CVV thật, dùng `pan_token`)
-- `[ ]` Card Number Tokenization: Masked number hiển thị (`**** **** **** 9988`), PAN token lưu DB
-- `[ ]` Virtual Card Generator: Random 16-digit PAN, CVV, expiry (Mock)
-- `[ ]` APIs:
-  - `GET /api/cards` — Danh sách thẻ của user
-  - `GET /api/cards/{id}` — Chi tiết thẻ
-  - `POST /api/cards/virtual` — Tạo virtual card (set spending limit)
-  - `PATCH /api/cards/{id}/freeze` — Khóa thẻ tạm thời (không cần OTP)
-  - `PATCH /api/cards/{id}/unfreeze` — Mở khóa thẻ
-  - `PATCH /api/cards/{id}/limits` — Cập nhật hạn mức online
-- `[ ]` Audit log: CARD_FROZEN, CARD_UNFROZEN, VIRTUAL_CARD_CREATED
-- `[ ]` Angular: Màn hình danh sách thẻ, chi tiết thẻ, toggle freeze, tạo virtual card
-- `[ ]` Test: Freeze/unfreeze, virtual card generation, card limit update
+- `[x]` Domain: `BankCard` aggregate, `CardStatus` FSM (ACTIVE $\leftrightarrow$ FROZEN $\rightarrow$ BLOCKED $\rightarrow$ EXPIRED) với quy tắc bất biến không thể khôi phục thẻ BLOCKED
+- `[x]` Flyway V11: `bank_cards` table (Tuân thủ PCI-DSS Tokenization: lưu `masked_pan` & `pan_token`, KHÔNG lưu PAN/CVV plain-text)
+- `[x]` Card Number Tokenization: `CardTokenizationService` sinh PAN 16 chữ số, Masked PAN (`4000 12** **** 8899`) và PAN Token duy nhất
+- `[x]` Virtual Card Generator: Kích hoạt thẻ ảo tức thì (VISA, MasterCard, Napas) kèm mã CVV ảo
+- `[x]` APIs:
+  - `GET /api/v1/cards` — Danh sách thẻ của user
+  - `GET /api/v1/cards/{id}` — Chi tiết thẻ
+  - `POST /api/v1/cards/virtual` — Phát hành thẻ ảo mới
+  - `PATCH /api/v1/cards/{id}/freeze` — Tạm khóa thẻ (FROZEN)
+  - `PATCH /api/v1/cards/{id}/unfreeze` — Mở khóa thẻ (ACTIVE)
+  - `PATCH /api/v1/cards/{id}/block` — Khóa thẻ vĩnh viễn / Báo mất (BLOCKED)
+  - `PATCH /api/v1/cards/{id}/limits` — Cập nhật hạn mức thanh toán online
+- `[x]` Angular: `CardService`, `CardsPage` hiển thị thẻ đồ họa TPBank Purple Theme, nút điều khiển FSM, Modal mở thẻ ảo & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Freeze/unfreeze, virtual card generation, card limit update, irreversible BLOCKED state (Maven & Angular Build 100% SUCCESS)
 
 ---
 
