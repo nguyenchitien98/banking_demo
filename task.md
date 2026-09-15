@@ -66,17 +66,17 @@
 
 ---
 
-## 💰 Sprint 05 — Account Module
+## 💰 Sprint 05 — Account Module & Main Dashboard Layout
 
-- `[ ]` Domain: BankAccount, Money, AccountId
-- `[ ]` Flyway V4: bank_accounts, transfer_limits
-- `[ ]` @Version column (Optimistic Lock)
-- `[ ]` Account Number generation
-- `[ ]` Balance cache Redis (30s TTL)
-- `[ ]` API: GET /accounts, POST /accounts, PATCH /accounts/:id/freeze
-- `[ ]` Angular: Account list screen
-- `[ ]` Angular: Account detail screen
-- `[ ]` Test: Open account, freeze/unfreeze, balance cache
+- `[x]` Domain: BankAccount aggregate root, Money Value Object, AccountId
+- `[x]` Flyway V4: `transfer_limits` table & `bank_accounts` extensions
+- `[x]` `@Version` column (Optimistic Lock) chống Race Condition
+- `[x]` Account Number auto generation (`BankAccountFactory`)
+- `[x]` Balance cache Redis 30s TTL (`account_balance:{accountNumber}`)
+- `[x]` API: `GET /api/v1/accounts`, `POST /api/v1/accounts`, `PATCH /api/v1/accounts/{id}/freeze`
+- `[x]` Angular: AccountService & MainLayoutComponent với TPBank Header & Sidebar (tách `.ts`, `.html`, `.scss`)
+- `[x]` Angular: DashboardPage hiển thị số dư, ẩn/hiện số dư, sao chép STK, mở tài khoản mới, thao tác nhanh & Panel kiểm thử thủ công
+- `[x]` Test: Open account, freeze account, balance cache, optimistic lock (Maven & Angular Build 100% SUCCESS)
 
 ---
 

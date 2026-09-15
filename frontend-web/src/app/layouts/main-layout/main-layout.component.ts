@@ -1,27 +1,43 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
  * Layout chính của BankX Web App (Banking Customer Portal).
  *
- * Chứa: Top header + Bottom navigation (mobile) + Router outlet.
- * Sẽ được thiết kế đầy đủ theo TPBank UI ở Sprint 05.
+ * Chứa:
+ * - Top header với TPBank Branding, thông tin tài khoản người dùng, nút Đăng xuất.
+ * - Sidebar Navigation chính (Trang chủ, Tài khoản, Chuyển tiền, Thanh toán, Thẻ, Hồ sơ).
+ * - Router Outlet hiển thị nội dung trang.
+ *
+ * @author BankX Engineering Team
+ * @version 1.0
  */
 @Component({
   selector: 'bankx-main-layout',
   standalone: true,
-  imports: [RouterOutlet],
-  template: `
-    <div class="bankx-layout">
-      <!-- Header và Navigation sẽ thêm ở Sprint 05 -->
-      <main class="bankx-content">
-        <router-outlet />
-      </main>
-    </div>
-  `,
-  styles: [`
-    .bankx-layout { min-height: 100vh; display: flex; flex-direction: column; }
-    .bankx-content { flex: 1; }
-  `]
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  templateUrl: './main-layout.component.html',
+  styleUrl: './main-layout.component.scss'
 })
-export class MainLayoutComponent {}
+export class MainLayoutComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  public readonly currentUser = this.authService.currentUser;
+  public sidebarOpen = false;
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  getUserInitials(): string {
+    const username = this.currentUser()?.username || 'U';
+    return username.substring(0, 2).toUpperCase();
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/auth/login']);
+  }
+}

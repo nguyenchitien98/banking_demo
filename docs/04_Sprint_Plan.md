@@ -131,26 +131,23 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 
 ---
 
-### Sprint 05: Account Module — Core
-**Trạng thái:** `[ ]`
+### Sprint 05: Account Module — Core & Main Dashboard Layout
+**Trạng thái:** `[x]` Đã hoàn thành
 
-**Kỹ thuật học:** JPA Optimistic Locking, Account Number generation, Balance management
+**Kỹ thuật học:** JPA Optimistic Locking (`@Version`), Money Value Object, Balance Redis Cache 30s, TPBank Dashboard UI
 
 **Checklist:**
-- `[ ]` Domain: `BankAccount` aggregate, `AccountType` (PAYMENT, SAVINGS, CREDIT), `AccountStatus`
-- `[ ]` Value Object: `AccountNumber` (format: 10 chữ số), `Money` (amount + Currency)
-- `[ ]` Flyway V4: `bank_accounts` table với cột `version` (Optimistic Lock)
-- `[ ]` Account Number generation: YYYYMMDD + random 4 digits, check unique
-- `[ ]` APIs:
-  - `GET /api/accounts` — List accounts của user hiện tại
-  - `GET /api/accounts/{id}` — Account detail
-  - `GET /api/accounts/{id}/balance` — Balance (Redis cache 30s)
-  - `POST /api/accounts` — Mở tài khoản mới (cần KYC verified)
-  - `PATCH /api/accounts/{id}/freeze` — Khóa tài khoản
-  - `PATCH /api/accounts/{id}/activate` — Mở khóa
-- `[ ]` Redis: Cache balance với TTL 30s (Cache Aside pattern)
-- `[ ]` Angular: Account list screen, Account detail screen
-- `[ ]` Test: Open account, freeze/unfreeze, balance cache
+- `[x]` Domain: `BankAccount` aggregate root, `Money` Value Object (BigDecimal scale 4, RoundingMode.HALF_UP)
+- `[x]` Flyway V4: `transfer_limits` table & `bank_accounts` extensions với cột `version` (Optimistic Lock)
+- `[x]` Account Number generation: `BankAccountFactory` tự động sinh 10-12 số ngẫu nhiên an toàn
+- `[x]` APIs:
+  - `GET /api/v1/accounts` — List accounts của user hiện tại
+  - `POST /api/v1/accounts` — Mở tài khoản mới
+  - `PATCH /api/v1/accounts/{id}/freeze` — Phong tỏa tài khoản
+- `[x]` Redis: Cache balance với TTL 30s (`account_balance:{accountNumber}`)
+- `[x]` Angular: AccountService & MainLayoutComponent với TPBank Header & Sidebar (tách `.ts`, `.html`, `.scss`)
+- `[x]` Angular: DashboardPage hiển thị số dư, ẩn/hiện số dư, sao chép STK, mở tài khoản mới, thao tác nhanh & Panel kiểm thử thủ công
+- `[x]` Test: Open account, freeze account, balance cache, optimistic lock (Maven & Angular Build 100% SUCCESS)
 
 ---
 

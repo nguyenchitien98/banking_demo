@@ -1,0 +1,288 @@
+<div class="dashboard-container">
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div class="welcome-text">
+      <h2>Xin chào, {{ currentUser()?.username || 'Khách hàng' }}! 👋</h2>
+      <p>Chào mừng bạn quay trở lại với hệ thống ngân hàng số <strong>BankX Digital Banking</strong>.</p>
+    </div>
+    <div class="banner-badge">
+      <span class="kyc-badge-verified">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Tài khoản đã xác thực (eKYC Level 2)
+      </span>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Main Account Card Section -->
+    <div class="dashboard-column main-col">
+      <!-- Balance Card -->
+      <div class="tpbank-card">
+        <div class="card-header">
+          <div class="account-type-tag">TÀI KHOẢN THANH TOÁN CHÍNH</div>
+          <button class="toggle-balance-btn" (click)="toggleBalanceVisibility()" title="Ẩn/Hiện số dư">
+            @if (showBalance) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            }
+          </button>
+        </div>
+
+        @if (primaryAccount()) {
+          <div class="card-account-info">
+            <span class="account-label">Số tài khoản</span>
+            <div class="account-number-row">
+              <span class="account-number">{{ primaryAccount()?.accountNumber }}</span>
+              <button class="copy-btn" (click)="copyAccountNumber(primaryAccount()?.accountNumber)" title="Sao chép số tài khoản">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-balance-section">
+            <span class="balance-label">Số dư khả dụng</span>
+            <div class="balance-amount">
+              @if (showBalance) {
+                <span>{{ primaryAccount()?.balance | number:'1.0-0' }}</span>
+                <span class="currency-symbol">VND</span>
+              } @else {
+                <span class="masked-balance">•••••••••••• VND</span>
+              }
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="card-chip"></div>
+            <div class="account-status-badge" [class.frozen]="primaryAccount()?.status === 'FROZEN'">
+              Trạng thái: <strong>{{ primaryAccount()?.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã phong tỏa' }}</strong>
+            </div>
+          </div>
+        } @else if (loadingAccounts) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Đang tải thông tin tài khoản...</p>
+          </div>
+        } @else {
+          <div class="no-account-state">
+            <p>Bạn chưa có tài khoản thanh toán nào.</p>
+            <button class="btn-open-account" (click)="openCreateAccountModal()">Mở tài khoản ngay</button>
+          </div>
+        }
+      </div>
+
+      <!-- Quick Actions Grid -->
+      <div class="quick-actions-card card">
+        <h3 class="section-title">Dịch vụ nhanh</h3>
+        <div class="action-grid">
+          <div class="action-item" routerLink="/transfers">
+            <div class="action-icon icon-purple">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="7" y1="17" x2="17" y2="7"></line>
+                <polyline points="7 7 17 7 17 17"></polyline>
+              </svg>
+            </div>
+            <span class="action-name">Chuyển tiền</span>
+          </div>
+
+          <div class="action-item" routerLink="/payments">
+            <div class="action-icon icon-pink">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+              </svg>
+            </div>
+            <span class="action-name">Thanh toán</span>
+          </div>
+
+          <div class="action-item" routerLink="/cards">
+            <div class="action-icon icon-orange">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+            </div>
+            <span class="action-name">Quản lý Thẻ</span>
+          </div>
+
+          <div class="action-item" (click)="openCreateAccountModal()">
+            <div class="action-icon icon-green">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+            <span class="action-name">Mở TK mới</span>
+          </div>
+
+          <div class="action-item" (click)="toggleFreezeCurrentAccount()">
+            <div class="action-icon icon-red">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <span class="action-name">Phong tỏa TK</span>
+          </div>
+
+          <div class="action-item" (click)="refreshAccounts()">
+            <div class="action-icon icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </div>
+            <span class="action-name">Tải lại số dư</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions List -->
+      <div class="transactions-card card">
+        <div class="card-header-flex">
+          <h3 class="section-title">Giao dịch gần đây</h3>
+          <a routerLink="/accounts" class="view-all-link">Xem tất cả &rarr;</a>
+        </div>
+
+        <div class="transaction-list">
+          @for (tx of mockTransactions; track tx.id) {
+            <div class="transaction-item">
+              <div class="tx-icon" [class.in]="tx.type === 'IN'" [class.out]="tx.type === 'OUT'">
+                @if (tx.type === 'IN') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                  </svg>
+                }
+              </div>
+
+              <div class="tx-details">
+                <span class="tx-title">{{ tx.description }}</span>
+                <span class="tx-time">{{ tx.timestamp }} • {{ tx.counterparty }}</span>
+              </div>
+
+              <div class="tx-amount" [class.text-money-in]="tx.type === 'IN'" [class.text-money-out]="tx.type === 'OUT'">
+                {{ tx.type === 'IN' ? '+' : '-' }}{{ tx.amount | number:'1.0-0' }} VND
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Side Column: All Accounts & Manual Verification Panel -->
+    <div class="dashboard-column side-col">
+      <!-- Accounts Summary List -->
+      <div class="accounts-summary-card card">
+        <h3 class="section-title">Danh sách tài khoản ({{ accounts().length }})</h3>
+        
+        <div class="accounts-mini-list">
+          @for (acc of accounts(); track acc.id) {
+            <div class="mini-account-item" [class.selected]="acc.id === primaryAccount()?.id" (click)="selectPrimaryAccount(acc)">
+              <div class="acc-info">
+                <span class="acc-name">{{ acc.accountName }}</span>
+                <span class="acc-num">{{ acc.accountNumber }}</span>
+              </div>
+              <div class="acc-balance">
+                <span>{{ acc.balance | number:'1.0-0' }} ₫</span>
+                <span class="acc-ver">v{{ acc.version }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <button class="btn-add-account-outline" (click)="openCreateAccountModal()">
+          + Mở thêm tài khoản phụ
+        </button>
+      </div>
+
+      <!-- Verification Guide Panel (Per AGENTS.md Rule) -->
+      <div class="verification-panel card">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7b2d8b" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <h4>Bảng Hướng Dẫn Kiểm Thử Thủ Công (Sprint 05)</h4>
+        </div>
+
+        <div class="panel-body">
+          <div class="test-scenario">
+            <span class="scenario-title">1. Happy Path — Hiển thị tài khoản & Số dư:</span>
+            <p>Hệ thống tự động tải thông tin BankAccount Aggregate. Bấm nút 👁️ để ẩn/hiện số dư hoặc nút 📋 để sao chép STK.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">2. Mở tài khoản mới & Redis Cache 30s:</span>
+            <p>Bấm nút <strong>"Mở TK mới"</strong> để gửi request <code>POST /api/v1/accounts</code>. Số dư được cache trên Redis TTL 30s với key <code>account_balance:&#123;accountNumber&#125;</code>.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">3. Khóa lạc quan (Optimistic Locking &#64;Version):</span>
+            <p>Mỗi tài khoản lưu trường <code>version</code>. Bấm <strong>"Phong tỏa TK"</strong> để kiểm tra cập nhật version tăng tự động.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Account Modal -->
+  @if (showCreateAccountModal) {
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Mở Tài Khoản Thanh Toán Mới</h3>
+          <button class="close-btn" (click)="closeCreateAccountModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Tên tài khoản / Loại tài khoản</label>
+            <input type="text" [(ngModel)]="newAccountName" class="input-field" placeholder="Ví dụ: Tài khoản Tiết kiệm, TK Chi tiêu..." />
+          </div>
+
+          <div class="form-group">
+            <label>Số dư khởi tạo (VND)</label>
+            <input type="number" [(ngModel)]="newAccountInitialBalance" class="input-field" placeholder="Ví dụ: 1000000" />
+          </div>
+
+          @if (modalError) {
+            <div class="error-msg">{{ modalError }}</div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeCreateAccountModal()">Hủy</button>
+          <button class="btn-primary" (click)="submitCreateAccount()" [disabled]="submittingAccount">
+            {{ submittingAccount ? 'Đang xử lý...' : 'Xác nhận Mở Tài Khoản' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast Notification -->
+  @if (toastMessage) {
+    <div class="toast-notification">
+      {{ toastMessage }}
+    </div>
+  }
+</div>
