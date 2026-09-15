@@ -5,7 +5,7 @@
 
 ---
 
-## 🗺️ Lộ Trình Học (10 Bài)
+## 🟢 Lộ Trình Cơ Bản (Bài 01-10)
 
 | # | Bài Học | Nội Dung | File BankX Liên Quan |
 |---|---|---|---|
@@ -19,6 +19,30 @@
 | **08** | [Signals & State Management](./08_signals_va_state_management.md) | `signal()`, `computed()`, `effect()`, State chia sẻ qua Service | `auth.service.ts`, `accounts.page.ts` |
 | **09** | [RxJS & HTTP Client](./09_rxjs_va_http_client.md) | `Observable`, `subscribe()`, `pipe()`, operators: `tap/map/catchError/forkJoin` | `accounts.page.ts`, `error.interceptor.ts` |
 | **10** | [Forms, @Input/@Output & Communication](./10_forms_input_output_communication.md) | Template-driven & Reactive Forms, `@Input`, `@Output`, `EventEmitter` | `accounts.page.html`, `accounts.page.ts` |
+
+---
+
+## 🟡 Lộ Trình Cấp Trung (Bài 11-14)
+
+| # | Bài Học | Nội Dung |
+|---|---|---|
+| **11** | [Forms Nâng Cao — Custom & Async Validators](./11_forms_nang_cao_validators.md) | `ValidatorFn`, `AsyncValidatorFn`, Cross-field validation, `FormArray` dynamic |
+| **12** | [Angular Animations](./12_angular_animations.md) | CSS `@keyframes`, `:enter/:leave`, `stagger()`, Route transitions, Micro-interactions |
+| **13** | [NgRx State Management](./13_ngrx_state_management.md) | Store, Actions, Reducers (EntityAdapter), Selectors (memoized), Effects |
+| **14** | [RxJS Nâng Cao](./14_rxjs_nang_cao.md) | `Subject/BehaviorSubject`, `switchMap/mergeMap/exhaustMap`, `shareReplay`, WebSocket |
+
+---
+
+## 🔴 Lộ Trình Cấp Senior (Bài 15-20)
+
+| # | Bài Học | Nội Dung |
+|---|---|---|
+| **15** | [Performance Optimization](./15_performance_optimization.md) | `OnPush` ChangeDetection, `track`, Virtual Scroll, `@defer`, Bundle analysis |
+| **16** | [Angular CDK](./16_angular_cdk.md) | Overlay, Drag & Drop, Clipboard, FocusTrap (A11y), Stepper, Platform |
+| **17** | [Custom Libraries & Nx Monorepo](./17_custom_libraries_monorepo.md) | Angular library, Design System, Nx workspace, Storybook |
+| **18** | [SSR & Angular Universal](./18_ssr_angular_universal.md) | CSR vs SSR vs Pre-rendering, `PLATFORM_ID`, `TransferState`, Hydration |
+| **19** | [Web Workers](./19_web_workers.md) | Off-main-thread computation, `postMessage`, Comlink, Fraud Analysis example |
+| **20** | [Micro-Frontends (Module Federation)](./20_micro_frontends.md) | Shell/Remote pattern, Webpack 5 Module Federation, Cross-app communication |
 
 ---
 
