@@ -1,0 +1,234 @@
+<div class="beneficiaries-container">
+  <!-- Dynamic Header Banner -->
+  <div class="header-banner">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div>
+        <h1>Danh Bạ Thụ Hưởng & Gợi Ý Chuyển Tiền Thông Minh</h1>
+        <p>Quản lý người nhận thường xuyên, tự động sắp xếp theo tần suất giao dịch (transferCount) và chuyển tiền 1-Click</p>
+      </div>
+      <div class="header-actions">
+        <button (click)="showAddModal = true" class="btn-add">
+          <span>➕ Thêm Người Nhận Mới</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <span>⚠️ {{ errorMessage }}</span>
+  </div>
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span>🎉 {{ successMessage }}</span>
+  </div>
+
+  <!-- Top Frequent Beneficiaries Grid (Smart Suggestions) -->
+  <div class="card frequent-card margin-bottom-24" *ngIf="beneficiaries.length > 0">
+    <div class="section-title">
+      <h3>⭐ Người Nhận Thường Xuyên Nhất (Gợi Ý Chuyển Nhanh)</h3>
+      <span class="subtitle">Sắp xếp tự động theo tần suất chuyển tiền (transferCount)</span>
+    </div>
+
+    <div class="frequent-grid">
+      <div 
+        *ngFor="let b of beneficiaries.slice(0, 4)" 
+        (click)="quickTransfer(b)" 
+        class="frequent-item-card">
+        
+        <div class="avatar-box">
+          {{ b.accountHolderName.substring(0, 2) }}
+        </div>
+        <div class="frequent-info">
+          <strong class="holder-name">{{ b.nickname || b.accountHolderName }}</strong>
+          <span class="acc-num">{{ b.accountNumber }}</span>
+          <span class="bank-tag">{{ b.bankName }}</span>
+        </div>
+        <div class="count-badge">
+          ⚡ {{ b.transferCount }} lần
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Table Section -->
+  <div class="card">
+    <div class="table-header-bar">
+      <h3>Danh Sách Danh Bạ Người Thụ Hưởng ({{ filteredBeneficiaries.length }})</h3>
+
+      <!-- Search Input -->
+      <div class="search-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="filterBeneficiaries()" 
+          placeholder="Tìm theo tên, biệt danh, STK hoặc ngân hàng..."
+          class="search-input">
+      </div>
+    </div>
+
+    <div *ngIf="filteredBeneficiaries.length === 0" class="empty-state">
+      <p>Không tìm thấy người thụ hưởng nào phù hợp trong danh bạ.</p>
+    </div>
+
+    <div *ngIf="filteredBeneficiaries.length > 0" class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tên Người Thụ Hưởng</th>
+            <th>Biệt Danh Gợi Nhớ</th>
+            <th>Số Tài Khoản</th>
+            <th>Ngân Hàng</th>
+            <th>Tần Suất (Lần)</th>
+            <th>Giao Dịch Cuối</th>
+            <th>Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of filteredBeneficiaries">
+            <td>
+              <div class="holder-cell">
+                <div class="mini-avatar">{{ b.accountHolderName.substring(0, 1) }}</div>
+                <strong>{{ b.accountHolderName }}</strong>
+              </div>
+            </td>
+            <td>
+              <span *ngIf="b.nickname" class="nickname-tag">✏️ {{ b.nickname }}</span>
+              <span *ngIf="!b.nickname" class="text-muted">Chưa đặt</span>
+            </td>
+            <td><strong class="acc-code">{{ b.accountNumber }}</strong></td>
+            <td><span class="bank-pill">{{ b.bankName }}</span></td>
+            <td><span class="freq-badge">⚡ {{ b.transferCount }}</span></td>
+            <td class="date-col">{{ b.lastTransferAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="action-cell">
+              <button (click)="quickTransfer(b)" class="btn-action btn-send" title="Chuyển tiền nhanh">
+                💸 Chuyển Tiền
+              </button>
+              <button (click)="openEditModal(b)" class="btn-action btn-edit" title="Đổi biệt danh">
+                ✏️ Biệt Danh
+              </button>
+              <button (click)="deleteBeneficiary(b)" class="btn-action btn-del" title="Xóa">
+                🗑️ Xóa
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADD BENEFICIARY MODAL -->
+  <div *ngIf="showAddModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>➕ Thêm Người Thụ Hưởng Vào Danh Bạ</h3>
+        <button (click)="showAddModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Ngân hàng nhận tiền:</label>
+          <select [(ngModel)]="addBankBin" (change)="onBankChange()" class="select-input">
+            <option *ngFor="let bank of banks" [value]="bank.bin">{{ bank.name }} (BIN: {{ bank.bin }})</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Số tài khoản nhận tiền:</label>
+          <div class="input-with-lookup">
+            <input 
+              type="text" 
+              [(ngModel)]="addAccountNumber" 
+              (ngModelChange)="onAccountInput()" 
+              placeholder="Nhập số tài khoản (Ví dụ: 1088889999)"
+              class="text-input">
+            <span *ngIf="isLookingUp" class="lookup-spinner">⏳ Đang tra cứu...</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tên chủ tài khoản (Tự động tra cứu):</label>
+          <input type="text" [(ngModel)]="addAccountHolderName" readonly class="text-input readonly-input">
+        </div>
+
+        <div class="form-group">
+          <label>Biệt danh gợi nhớ (Tùy chọn, ví dụ: "Anh Nam Sếp", "Mẹ ở quê"):</label>
+          <input type="text" [(ngModel)]="addNickname" placeholder="Nhập biệt danh gợi nhớ..." class="text-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showAddModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="saveBeneficiary()" [disabled]="loading || !addAccountHolderName" class="btn-primary">
+          <span>Lưu Vào Danh Bạ</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT NICKNAME MODAL -->
+  <div *ngIf="showEditModal && editingBeneficiary" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>✏️ Đổi Biệt Danh Cho [{{ editingBeneficiary.accountHolderName }}]</h3>
+        <button (click)="showEditModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Biệt danh mới:</label>
+          <input type="text" [(ngModel)]="editNickname" placeholder="Ví dụ: Anh Nam Sếp" class="text-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showEditModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="saveNickname()" [disabled]="loading" class="btn-primary">Lưu Thay Đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANDATORY VERIFICATION GUIDE PANEL (RULE[AGENTS.md]) -->
+  <div class="card verification-panel margin-top-30">
+    <div class="panel-header">
+      <span class="icon">🧪</span>
+      <h3>Hướng Dẫn Kiểm Thử Thủ Công — Sprint 17: Beneficiary Management & Smart Suggestions</h3>
+    </div>
+    <div class="panel-body">
+      <p>Khu vực này hỗ trợ các kỹ sư kiểm thử xác minh tính năng quản lý danh bạ thụ hưởng và tự động tăng số lần chuyển tiền (transferCount):</p>
+      
+      <div class="test-scenarios">
+        <div class="scenario-item">
+          <strong>Kịch bản 1: Sắp xếp người nhận theo Tần suất Giao dịch (transferCount DESC)</strong>
+          <ul>
+            <li>Quan sát khu vực <strong>"⭐ Người Nhận Thường Xuyên Nhất"</strong> ở trên cùng.</li>
+            <li><strong>Kỳ vọng:</strong> Người thụ hưởng có <code>transferCount</code> lớn nhất (ví dụ: BEN-001 với 18 lần) luôn được ưu tiên đứng vị trí số 1 để hỗ trợ 1-Click chuyển tiền nhanh.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 2: Tra cứu Tên Chủ Tài Khoản Tự Động (Account Lookup API)</strong>
+          <ul>
+            <li>Bấm <strong>"➕ Thêm Người Nhận Mới"</strong>, chọn Ngân hàng BankX hoặc TPBank, nhập STK <code>1088889999</code>.</li>
+            <li><strong>Kỳ vọng:</strong> Tên chủ tài khoản <code>NGUYEN CHITIEN</code> tự động điền sẵn vào trường tên người nhận qua API `/lookup`.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 3: Chuyển tiền 1-Click từ Danh bạ (Quick-pick Transfer)</strong>
+          <ul>
+            <li>Bấm nút <strong>"💸 Chuyển Tiền"</strong> trên bất kỳ dòng người thụ hưởng nào.</li>
+            <li><strong>Kỳ vọng:</strong> Màn hình tự động điều hướng sang trang Chuyển tiền `/transfers` và tự động điền sẵn STK + Tên người nhận.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

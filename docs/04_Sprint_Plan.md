@@ -391,23 +391,23 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 17: Beneficiary Management
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Frequent pattern tracking, Smart suggestions
 
 **Checklist:**
-- `[ ]` Domain: `Beneficiary` entity
-- `[ ]` Flyway V11: `beneficiaries` table
-- `[ ]` Auto-save beneficiary sau mỗi transfer thành công (increment `transfer_count`)
-- `[ ]` APIs:
-  - `GET /api/beneficiaries` — Danh sách (sort by transfer_count DESC)
-  - `POST /api/beneficiaries` — Thêm thủ công
-  - `PUT /api/beneficiaries/{id}` — Đổi nickname
-  - `DELETE /api/beneficiaries/{id}` — Soft delete
-  - `GET /api/accounts/lookup?accountNumber=xxx` — Tra cứu tên tài khoản BankX
-- `[ ]` Angular: Màn hình beneficiary list, search, add/edit, xóa
-- `[ ]` Angular Transfer: Quick-pick từ beneficiary list
-- `[ ]` Test: Auto-save on transfer, sort by frequency, lookup
+- `[x]` Domain: `BeneficiaryJpaEntity` theo dõi `transferCount` và `lastTransferAt`
+- `[x]` Flyway V13: `beneficiaries` table + seed người thụ hưởng thường xuyên mẫu
+- `[x]` Tự động lưu/Tăng `transferCount` sau mỗi giao dịch chuyển tiền thành công
+- `[x]` APIs:
+  - `GET /api/v1/beneficiaries` — Danh sách người nhận thường xuyên (sort by `transferCount DESC`)
+  - `POST /api/v1/beneficiaries` — Thêm thủ công người nhận
+  - `PUT /api/v1/beneficiaries/{id}` — Đổi biệt danh (nickname)
+  - `DELETE /api/v1/beneficiaries/{id}` — Xóa khỏi danh bạ
+  - `GET /api/v1/beneficiaries/lookup` — Tra cứu tên tài khoản nhận tiền (BankX & TPBank)
+- `[x]` Angular: `BeneficiaryService`, `BeneficiariesPage` hiển thị Grid gợi ý chuyển nhanh top 4, Bảng danh bạ tìm kiếm/lọc, Modal thêm/sửa biệt danh & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Angular Transfer: Tích hợp 1-Click Quick-pick chuyển tiền nhanh từ danh bạ sang `/transfers`
+- `[x]` Test: Auto-save on transfer, sort by frequency, account lookup (Maven & Angular Build 100% SUCCESS)
 
 ---
 

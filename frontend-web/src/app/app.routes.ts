@@ -63,6 +63,13 @@ export const routes: Routes = [
             (m) => m.FRAUD_ROUTES
           ),
       },
+      {
+        path: 'beneficiaries',
+        loadChildren: () =>
+          import('./features/beneficiaries/beneficiaries.routes').then(
+            (m) => m.BENEFICIARIES_ROUTES
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

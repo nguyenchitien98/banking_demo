@@ -220,15 +220,28 @@
 
 ---
 
+## 👥 Sprint 17 — Beneficiary Management (Frequent Suggestions)
+
+- `[x]` Domain: `BeneficiaryJpaEntity` theo dõi `transferCount` và `lastTransferAt` hỗ trợ bài toán gợi ý thụ hưởng thông minh
+- `[x]` Flyway V13: `beneficiaries` table + seed danh bạ mẫu với ràng buộc UNIQUE `(customer_id, account_number, bank_bin)`
+- `[x]` Auto-save & Frequency counter: Tự động lưu/tăng `transferCount` sau mỗi giao dịch chuyển tiền thành công
+- `[x]` APIs: `GET /api/v1/beneficiaries`, `POST /api/v1/beneficiaries`, `PUT /api/v1/beneficiaries/{id}`, `DELETE /api/v1/beneficiaries/{id}`, `GET /api/v1/beneficiaries/lookup`
+- `[x]` Angular: `BeneficiaryService`, `BeneficiariesPage` tích hợp Grid gợi ý chuyển tiền nhanh Top 4, Bảng danh bạ tìm kiếm/lọc, Modal thêm/sửa biệt danh & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Angular 1-Click Transfer: Điều hướng nhanh từ danh bạ thụ hưởng sang form chuyển tiền `/transfers`
+- `[x]` Test: Auto-save on transfer, sorting by transferCount DESC, account holder lookup (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
-Phase 3 (Sprint 13-18):       30/45 tasks  [ 67%]
+Phase 3 (Sprint 13-18):       37/45 tasks  [ 82%]
 
-OVERALL: 116/135 tasks completed
+OVERALL: 123/135 tasks completed
 ```
 
 ---
@@ -242,3 +255,4 @@ OVERALL: 116/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 14 QR Payment module chuẩn VietQR EMVCo (TLVs, CRC-16 Checksum, Generator & Decoder). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 15 Card module (PCI-DSS Tokenization, Virtual Card Generator & Card Lifecycle FSM). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 16 Fraud Detection module (Rule Engine, Risk Score 0–100 & Admin Alerts Center). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 17 Beneficiary Management module (Smart Suggestions, Frequency Tracking & Account Lookup API). Full stack Maven & Angular build xanh 100%.
