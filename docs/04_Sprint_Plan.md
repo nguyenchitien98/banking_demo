@@ -297,24 +297,24 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ## 💳 Phase 3: Payment & Advanced Features (Sprint 13–18)
 
 ### Sprint 13: Payment Module — Bill Payment
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Strategy Pattern, Provider abstraction, Payment flow
 
 **Checklist:**
-- `[ ]` Domain: `BillPayment` aggregate, `PaymentProvider` interface (Strategy Pattern)
-- `[ ]` Flyway V8: `bill_payments`, `payment_providers` tables
-- `[ ]` Implement providers: `EVNProvider`, `WaterProvider`, `ViettelProvider`, `MockProvider`
-- `[ ]` `PaymentProviderFactory` dùng Map injection của Spring (`@PostConstruct` build map)
-- `[ ]` APIs:
-  - `GET /api/payments/providers` — Danh sách nhà cung cấp
-  - `GET /api/payments/bills?providerCode=EVN_HN&billNumber=xxx` — Tra cứu hóa đơn
-  - `POST /api/payments/bills` — Thanh toán hóa đơn (có Idempotency-Key)
-  - `GET /api/payments/history` — Lịch sử thanh toán
-- `[ ]` Ledger: Ghi Double-Entry cho mỗi payment
-- `[ ]` Outbox: Publish `payment.completed` event
-- `[ ]` Angular: Màn hình danh mục dịch vụ, nhập mã KH, xác nhận, kết quả
-- `[ ]` Test: Happy path từng provider, invalid bill number, insufficient balance
+- `[x]` Domain: `BillPayment` aggregate, `PaymentProvider` interface (Strategy Pattern)
+- `[x]` Flyway V9: `bill_payments`, `payment_providers` tables
+- `[x]` Implement providers: `EvnPaymentProvider`, `WaterPaymentProvider`, `ViettelPaymentProvider`, `MockPaymentProvider`
+- `[x]` `PaymentProviderFactory` dùng Map injection của Spring (`@PostConstruct` build map)
+- `[x]` APIs:
+  - `GET /api/v1/payments/providers` — Danh sách nhà cung cấp
+  - `GET /api/v1/payments/bills?providerCode=EVN_HN&billNumber=xxx` — Tra cứu hóa đơn
+  - `POST /api/v1/payments/bills` — Thanh toán hóa đơn (có Idempotency-Key)
+  - `GET /api/v1/payments/history` — Lịch sử thanh toán
+- `[x]` Ledger: Ghi Double-Entry cho mỗi payment
+- `[x]` Outbox: Publish `payment.completed` event
+- `[x]` Angular: Màn hình danh mục dịch vụ, tra cứu hóa đơn, xác nhận thanh toán, lịch sử bút toán & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Happy path từng provider, invalid bill number, insufficient balance (Maven & Angular Build 100% SUCCESS)
 
 **Kỹ thuật phỏng vấn:** "Thêm provider mới (ví dụ MoMo) thì phải sửa code ở đâu?"
 

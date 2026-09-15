@@ -167,15 +167,30 @@
 
 ---
 
+## 💳 Sprint 13 — Payment Module (Bill Payment)
+
+- `[x]` Domain: `BillPayment` aggregate root, `PaymentProvider` interface (Strategy Pattern), `PaymentCategory`, `PaymentStatus`
+- `[x]` Flyway V9: `payment_providers` & `bill_payments` tables + seed nhà cung cấp EVN, HCM Water, Viettel, Mock
+- `[x]` Strategy Pattern Implementations: `EvnPaymentProvider`, `WaterPaymentProvider`, `ViettelPaymentProvider`, `MockPaymentProvider`
+- `[x]` Strategy Factory: `PaymentProviderFactory` tự động đăng ký provider strategies qua Spring IoC `@PostConstruct` map injection (tuân thủ OCP)
+- `[x]` APIs: `GET /api/v1/payments/providers`, `GET /api/v1/payments/bills`, `@Idempotent POST /api/v1/payments/bills`, `GET /api/v1/payments/history`
+- `[x]` Double-Entry Ledger integration: Hạch toán Nợ/Có ghi nhận giao dịch thanh toán hóa đơn
+- `[x]` Transactional Outbox integration: Phát bản tin `PAYMENT_COMPLETED` vào bảng outbox trong cùng CSDL transaction
+- `[x]` Angular: `PaymentService`, `PaymentsPage` lựa chọn danh mục/nhà cung cấp, tra cứu hóa đơn, xác nhận thanh toán, bảng lịch sử & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Multi-provider inquiry & payment, invalid bill number, insufficient balance, idempotency prevention (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
-Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
-Phase 3+ (Sprint 13-30):      Not broken down yet
+Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
+Phase 3 (Sprint 13-18):        9/45 tasks  [ 20%]
 
-OVERALL: 37/90 tasks completed
+OVERALL: 95/135 tasks completed
 ```
 
 ---
@@ -185,3 +200,4 @@ OVERALL: 37/90 tasks completed
 > Thêm ghi chú, vấn đề gặp phải, quyết định đột xuất vào đây.
 
 - [2026-09-14] Khởi tạo project - Đang setup docs và planning
+- [2026-09-15] Hoàn thành Sprint 13 Bill Payment module với Strategy Pattern (SOLID OCP). Full stack Maven & Angular build xanh 100%.

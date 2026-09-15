@@ -1,0 +1,275 @@
+<div class="payments-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2>Thanh toán Hóa đơn Dịch vụ & Strategy Pattern</h2>
+    <p class="subtitle">Gạch nợ tự động điện, nước, viễn thông tích hợp Idempotency Key & Transactional Outbox Pattern</p>
+  </div>
+
+  <div class="payments-grid">
+    <!-- Main Column -->
+    <div class="main-column">
+      @if (completedPayment) {
+        <!-- Payment Result Receipt Card -->
+        <div class="card result-card">
+          <div class="success-icon-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+
+          <h3>Thanh toán Hóa đơn Thành công!</h3>
+          <div class="result-amount-display">
+            -{{ completedPayment.amount | number:'1.0-0' }} VND
+          </div>
+
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span class="label">Mã giao dịch</span>
+              <span class="val font-mono">{{ completedPayment.paymentCode }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Nhà cung cấp</span>
+              <span class="val font-bold text-primary">{{ completedPayment.providerCode }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Mã khách hàng / Danh bạ</span>
+              <span class="val font-mono">{{ completedPayment.customerBillCode }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Tên khách hàng</span>
+              <span class="val font-bold">{{ completedPayment.customerName }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Kỳ thanh toán</span>
+              <span class="val">{{ completedPayment.period }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Phí giao dịch</span>
+              <span class="val text-success">Miễn phí (0 VND)</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Thời gian thực hiện</span>
+              <span class="val">{{ completedPayment.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+          </div>
+
+          <button class="btn-primary" (click)="resetForm()">Tạo thanh toán mới</button>
+        </div>
+      } @else {
+        <!-- Payment Form -->
+        <div class="card form-card">
+          <!-- Step 1: Category Filter & Provider Selector -->
+          <div class="form-section">
+            <h3 class="section-title">1. Chọn Danh mục & Nhà cung cấp</h3>
+
+            <div class="category-tabs">
+              <button class="tab-btn" [class.active]="selectedCategory === 'ALL'" (click)="setCategory('ALL')">Tất cả</button>
+              <button class="tab-btn" [class.active]="selectedCategory === 'ELECTRICITY'" (click)="setCategory('ELECTRICITY')">⚡ Điện lực</button>
+              <button class="tab-btn" [class.active]="selectedCategory === 'WATER'" (click)="setCategory('WATER')">💧 Nước sinh hoạt</button>
+              <button class="tab-btn" [class.active]="selectedCategory === 'TELECOM'" (click)="setCategory('TELECOM')">📡 Viễn thông</button>
+            </div>
+
+            <div class="provider-cards-grid">
+              @for (p of filteredProviders(); track p.code) {
+                <div class="provider-card" [class.selected]="selectedProviderCode === p.code" (click)="selectProvider(p.code)">
+                  <div class="provider-code font-mono">{{ p.code }}</div>
+                  <div class="provider-name">{{ p.name }}</div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Step 2: Bill Code & Inquiry -->
+          <div class="form-section border-top">
+            <h3 class="section-title">2. Tra cứu Hóa đơn</h3>
+
+            <div class="form-group">
+              <label>Tài khoản trích nợ</label>
+              <select [(ngModel)]="sourceAccountId" class="input-field">
+                @for (acc of accounts(); track acc.id) {
+                  <option [value]="acc.id">
+                    {{ acc.accountName }} ({{ acc.accountNumber }}) — {{ acc.balance | number:'1.0-0' }} ₫
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Mã khách hàng / Mã danh bạ hóa đơn</label>
+              <div class="input-with-action">
+                <input type="text" [(ngModel)]="customerBillCode" class="input-field" placeholder="Ví dụ: PE0100234567" />
+                <button class="btn-inquire-sm" (click)="inquireBill()" [disabled]="inquiring">
+                  {{ inquiring ? 'Đang tra cứu...' : 'Tra cứu nợ cước' }}
+                </button>
+              </div>
+
+              @if (inquiryError) {
+                <div class="error-msg mt-2">⚠️ {{ inquiryError }}</div>
+              }
+            </div>
+
+            <!-- Inquired Bill Result Card -->
+            @if (inquiryResult) {
+              <div class="inquiry-result-box">
+                <div class="inquiry-header">
+                  <span class="badge-success">✓ Đã tìm thấy hóa đơn cần thanh toán</span>
+                </div>
+
+                <div class="inquiry-details-grid">
+                  <div class="detail-item">
+                    <span class="label">Khách hàng:</span>
+                    <span class="val font-bold">{{ inquiryResult.customerName }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">Nhà cung cấp:</span>
+                    <span class="val font-bold text-primary">{{ inquiryResult.providerName }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">Kỳ thanh toán:</span>
+                    <span class="val">{{ inquiryResult.period }}</span>
+                  </div>
+                  <div class="detail-item highlight-amount">
+                    <span class="label">Số tiền cần trả:</span>
+                    <span class="val amount-text">{{ inquiryResult.amount | number:'1.0-0' }} VND</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (formError) {
+            <div class="error-msg">{{ formError }}</div>
+          }
+
+          <button class="btn-primary btn-submit-payment" (click)="openConfirmModal()" [disabled]="!inquiryResult">
+            Thanh toán Hóa đơn ngay
+          </button>
+        </div>
+      }
+
+      <!-- Payment History Table Card -->
+      <div class="card history-card">
+        <h3 class="section-title">📜 Lịch sử Thanh toán Hóa đơn</h3>
+        <div class="table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Mã GD</th>
+                <th>Nhà cung cấp</th>
+                <th>Mã KH</th>
+                <th>Khách hàng</th>
+                <th>Số tiền</th>
+                <th>Kỳ</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of history(); track item.id) {
+                <tr>
+                  <td class="font-mono text-xs">{{ item.paymentCode }}</td>
+                  <td class="font-bold text-primary">{{ item.providerCode }}</td>
+                  <td class="font-mono text-xs">{{ item.customerBillCode }}</td>
+                  <td>{{ item.customerName }}</td>
+                  <td class="font-bold text-danger">-{{ item.amount | number:'1.0-0' }} ₫</td>
+                  <td>{{ item.period }}</td>
+                  <td><span class="badge-success-sm">COMPLETED</span></td>
+                  <td class="text-xs">{{ item.createdAt | date:'HH:mm dd/MM' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">Chưa có lịch sử thanh toán nào.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side Column: Verification Guide Panel -->
+    <div class="side-column">
+      <div class="verification-panel card">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7b2d8b" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 13 — Strategy Pattern)</h4>
+        </div>
+
+        <div class="panel-body">
+          <div class="test-scenario">
+            <span class="scenario-title">1. Kiến trúc Strategy Pattern:</span>
+            <p>Tất cả Nhà cung cấp (<code>EVN_HN</code>, <code>WATER_HCM</code>, <code>VIETTEL_TEL</code>) triển khai chung Interface <code>PaymentProvider</code>.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">2. Phỏng vấn OCP (Open-Closed Principle):</span>
+            <p>Khi thêm Provider mới (ví dụ MoMo), chỉ cần tạo Class mới implement <code>PaymentProvider</code> với <code>&#64;Component</code>. Spring IoC tự động đưa vào <code>PaymentProviderFactory</code> mà <strong>KHÔNG sửa 1 dòng code nào hiện tại</strong>!</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">3. Tích hợp Ledger sổ kép & Outbox:</span>
+            <p>Mỗi giao dịch thanh toán tự động ghi Bút toán Sổ kép <code>Double-Entry</code> trừ tiền tài khoản và phát bản tin <code>PAYMENT_COMPLETED</code> sang Outbox Pattern.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  @if (showConfirmModal && inquiryResult) {
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Xác nhận Thanh toán Hóa đơn</h3>
+          <button class="close-btn" (click)="closeConfirmModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="confirm-box">
+            <div class="confirm-row">
+              <span class="label">Từ tài khoản</span>
+              <span class="val font-mono">{{ getSourceAccountNumber() }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Nhà cung cấp</span>
+              <span class="val font-bold text-primary">{{ inquiryResult.providerName }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Mã khách hàng</span>
+              <span class="val font-mono">{{ inquiryResult.customerBillCode }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Tên khách hàng</span>
+              <span class="val font-bold">{{ inquiryResult.customerName }}</span>
+            </div>
+            <div class="confirm-row highlighted">
+              <span class="label">Số tiền gạch nợ</span>
+              <span class="val amount-val">{{ inquiryResult.amount | number:'1.0-0' }} VND</span>
+            </div>
+            <div class="confirm-row">
+              <span class="label">Idempotency Key</span>
+              <span class="val font-mono text-xs">{{ idempotencyKey }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeConfirmModal()">Hủy</button>
+          <button class="btn-primary" (click)="submitPayBill()" [disabled]="submitting">
+            {{ submitting ? 'Đang thanh toán...' : 'Xác nhận Thanh toán' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMessage) {
+    <div class="toast-notification">
+      {{ toastMessage }}
+    </div>
+  }
+</div>

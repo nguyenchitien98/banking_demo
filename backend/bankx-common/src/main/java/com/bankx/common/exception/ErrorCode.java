@@ -46,7 +46,11 @@ public enum ErrorCode {
     // Transfer & Transaction (4000 - 4099)
     DUPLICATE_TRANSACTION(4001, "Yêu cầu giao dịch trùng lặp (Idempotency check failed)", HttpStatus.CONFLICT),
     OPTIMISTIC_LOCK_CONFLICT(4002, "Dữ liệu vừa bị thay đổi bởi giao dịch khác, vui lòng thử lại", HttpStatus.CONFLICT),
-    TRANSFER_FAILED(4003, "Giao dịch chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR);
+    TRANSFER_FAILED(4003, "Giao dịch chuyển tiền thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // Payment (5000 - 5099)
+    PAYMENT_FAILED(5001, "Thanh toán hóa đơn dịch vụ thất bại", HttpStatus.BAD_REQUEST);
+
 
     private final int code;
     private final String message;
