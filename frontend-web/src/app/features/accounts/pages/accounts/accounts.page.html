@@ -1,0 +1,282 @@
+<div class="accounts-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>Quản lý Tài khoản & Bút toán Ghi sổ (Ledger)</h2>
+      <p class="subtitle">Theo dõi số dư và chi tiết bút toán hạch toán kế toán ghi sổ kép (Double-Entry Bookkeeping)</p>
+    </div>
+    <button class="btn-primary-sm" (click)="openDoubleEntryModal()">
+      + Thử nghiệm Hạch toán Sổ kép
+    </button>
+  </div>
+
+  <div class="accounts-grid">
+    <!-- Left Column: Bank Accounts List -->
+    <div class="column-left">
+      <div class="card card-accounts">
+        <h3 class="section-title">Tài khoản của bạn ({{ accounts().length }})</h3>
+
+        <div class="account-card-list">
+          @for (acc of accounts(); track acc.id) {
+            <div class="account-item-card" [class.active]="selectedAccount()?.id === acc.id" (click)="selectAccount(acc)">
+              <div class="acc-header">
+                <span class="acc-type">{{ acc.accountName }}</span>
+                <span class="acc-status-tag" [class.frozen]="acc.status === 'FROZEN'">{{ acc.status }}</span>
+              </div>
+              <div class="acc-num-code">{{ acc.accountNumber }}</div>
+              <div class="acc-balance-display">
+                <span class="label">Số dư khả dụng</span>
+                <span class="val">{{ acc.balance | number:'1.0-0' }} VND</span>
+              </div>
+              <div class="acc-meta">
+                <span>Lock Version: <strong>v{{ acc.version }}</strong></span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Verification Guide Panel (Per AGENTS.md Rule) -->
+      <div class="verification-panel card">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7b2d8b" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 06 — Ledger)</h4>
+        </div>
+
+        <div class="panel-body">
+          <div class="test-scenario">
+            <span class="scenario-title">1. Nguyên tắc Kế toán Ghi sổ kép (Double-Entry Invariant):</span>
+            <p>Mỗi giao dịch ngân hàng bắt buộc sinh ra 1 cặp bút toán <code>DEBIT</code> (Ghi Nợ) và <code>CREDIT</code> (Ghi Có). Kiểm tra đẳng thức: <code>SUM(DEBIT) == SUM(CREDIT)</code>.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">2. Tính Bất biến của Bản ghi Tài chính (Immutability):</span>
+            <p>Bảng <code>transactions</code> và <code>ledger_entries</code> không có cột <code>updated_at</code> hay <code>deleted_at</code> để đảm bảo không thể chỉnh sửa hoặc xóa lịch sử tài chính.</p>
+          </div>
+
+          <div class="test-scenario">
+            <span class="scenario-title">3. Thực hành kiểm thử trên UI:</span>
+            <p>Bấm nút <strong>"+ Thử nghiệm Hạch toán Sổ kép"</strong> để chọn tài khoản Nợ & Có và thực hiện giao dịch ghi sổ trực tiếp.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Ledger Entries Table -->
+    <div class="column-right">
+      <div class="card card-ledger">
+        <div class="card-header-flex">
+          <div>
+            <h3 class="section-title">Sổ nhật ký Bút toán (Ledger Entries)</h3>
+            <span class="selected-acc-sub" *ngIf="selectedAccount()">
+              Tài khoản: <strong>{{ selectedAccount()?.accountNumber }}</strong> ({{ selectedAccount()?.accountName }})
+            </span>
+          </div>
+          <button class="btn-refresh" (click)="refreshLedger()" title="Tải lại sổ bút toán">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Tải lại
+          </button>
+        </div>
+
+        @if (loadingEntries) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Đang tải bút toán ghi sổ...</p>
+          </div>
+        } @else if (entries().length === 0) {
+          <div class="empty-state">
+            <p>Chưa có bút toán hạch toán nào cho tài khoản này.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Loại bút toán</th>
+                  <th>Số tiền hạch toán</th>
+                  <th>Số dư sau giao dịch</th>
+                  <th>Thời điểm ghi nhận</th>
+                  <th>Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of entries(); track entry.id) {
+                  <tr (click)="viewTransactionDetail(entry.transactionId)" class="clickable-row">
+                    <td>
+                      <span class="entry-badge" [class.debit]="entry.entryType === 'DEBIT'" [class.credit]="entry.entryType === 'CREDIT'">
+                        {{ entry.entryType === 'DEBIT' ? 'GHI NỢ (DEBIT)' : 'GHI CÓ (CREDIT)' }}
+                      </span>
+                    </td>
+                    <td class="amount-col" [class.text-debit]="entry.entryType === 'DEBIT'" [class.text-credit]="entry.entryType === 'CREDIT'">
+                      {{ entry.entryType === 'DEBIT' ? '-' : '+' }}{{ entry.amount | number:'1.0-0' }} {{ entry.currency }}
+                    </td>
+                    <td class="balance-after-col">
+                      {{ entry.balanceAfter | number:'1.0-0' }} VND
+                    </td>
+                    <td class="time-col">
+                      {{ entry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
+                    </td>
+                    <td>
+                      <button class="btn-detail-sm" title="Xem chi tiết giao dịch sổ kép">🔍 Xem</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Record Double Entry Test -->
+  @if (showDoubleEntryModal) {
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Thử nghiệm Hạch toán Bút toán Ghi sổ kép</h3>
+          <button class="close-btn" (click)="closeDoubleEntryModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Tài khoản Trích Nợ (Ghi Nợ — DEBIT)</label>
+            <select [(ngModel)]="debitAccountId" class="input-field">
+              <option value="" disabled>-- Chọn tài khoản gửi tiền --</option>
+              @for (acc of accounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.accountName }} ({{ acc.accountNumber }}) - {{ acc.balance | number:'1.0-0' }} ₫</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Tài khoản Thụ hưởng (Ghi Có — CREDIT)</label>
+            <select [(ngModel)]="creditAccountId" class="input-field">
+              <option value="" disabled>-- Chọn tài khoản nhận tiền --</option>
+              @for (acc of accounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.accountName }} ({{ acc.accountNumber }}) - {{ acc.balance | number:'1.0-0' }} ₫</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Số tiền giao dịch (VND)</label>
+            <input type="number" [(ngModel)]="transferAmount" class="input-field" placeholder="Ví dụ: 500000" />
+          </div>
+
+          <div class="form-group">
+            <label>Diễn giải giao dịch</label>
+            <input type="text" [(ngModel)]="transferDescription" class="input-field" placeholder="Nội dung chuyển khoản ghi sổ" />
+          </div>
+
+          @if (modalError) {
+            <div class="error-msg">{{ modalError }}</div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeDoubleEntryModal()">Hủy</button>
+          <button class="btn-primary" (click)="submitDoubleEntry()" [disabled]="submittingLedger">
+            {{ submittingLedger ? 'Đang hạch toán...' : 'Xác nhận Hạch toán Sổ kép' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: View Double-Entry Transaction Detail -->
+  @if (selectedTransaction) {
+    <div class="modal-overlay">
+      <div class="modal-card wide-modal">
+        <div class="modal-header">
+          <h3>Chi tiết Giao dịch Ghi sổ kép #{{ selectedTransaction.transactionReference }}</h3>
+          <button class="close-btn" (click)="closeTransactionDetail()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="tx-summary-box">
+            <div class="summary-item">
+              <span class="label">Mã giao dịch</span>
+              <span class="val font-mono">{{ selectedTransaction.transactionReference }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Loại giao dịch</span>
+              <span class="val badge-type">{{ selectedTransaction.transactionType }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Số tiền tổng</span>
+              <span class="val text-primary font-bold">{{ selectedTransaction.amount | number:'1.0-0' }} {{ selectedTransaction.currency }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Trạng thái</span>
+              <span class="val badge-success">{{ selectedTransaction.status }}</span>
+            </div>
+          </div>
+
+          <div class="double-entry-proof-box">
+            <h4>Bằng chứng Kế toán Ghi sổ kép (Double-Entry Balance Proof)</h4>
+            <div class="proof-equation">
+              <div class="equation-part debit">
+                <span>TỔNG DEBIT (GHI NỢ)</span>
+                <strong>{{ totalDebitAmount() | number:'1.0-0' }} VND</strong>
+              </div>
+              <div class="equation-equals">=</div>
+              <div class="equation-part credit">
+                <span>TỔNG CREDIT (GHI CÓ)</span>
+                <strong>{{ totalCreditAmount() | number:'1.0-0' }} VND</strong>
+              </div>
+              <div class="proof-badge">
+                ✅ SUM(DEBIT) == SUM(CREDIT) (VALIDATED)
+              </div>
+            </div>
+          </div>
+
+          <h4>Danh sách bút toán thành phần (Entries Breakdown)</h4>
+          <table class="detail-entries-table">
+            <thead>
+              <tr>
+                <th>Tài khoản</th>
+                <th>Loại bút toán</th>
+                <th>Số tiền</th>
+                <th>Số dư sau giao dịch</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of selectedTransaction.entries; track entry.id) {
+                <tr>
+                  <td class="font-mono">{{ entry.accountId }}</td>
+                  <td>
+                    <span class="entry-badge" [class.debit]="entry.entryType === 'DEBIT'" [class.credit]="entry.entryType === 'CREDIT'">
+                      {{ entry.entryType }}
+                    </span>
+                  </td>
+                  <td class="font-bold" [class.text-debit]="entry.entryType === 'DEBIT'" [class.text-credit]="entry.entryType === 'CREDIT'">
+                    {{ entry.amount | number:'1.0-0' }} VND
+                  </td>
+                  <td>{{ entry.balanceAfter | number:'1.0-0' }} VND</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-primary" (click)="closeTransactionDetail()">Đóng</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMessage) {
+    <div class="toast-notification">
+      {{ toastMessage }}
+    </div>
+  }
+</div>

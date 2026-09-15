@@ -154,20 +154,22 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ## 🏦 Phase 2: Transfer Core — Banking Heart (Sprint 06–12)
 
 ### Sprint 06: Ledger Module — Double-Entry Bookkeeping
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Double-Entry Bookkeeping, Ledger pattern, Financial immutability
 
 **Checklist:**
-- `[ ]` Domain: `LedgerEntry` (DEBIT/CREDIT), `Transaction` aggregate
-- `[ ]` Flyway V5: `transactions`, `ledger_entries` tables (KHÔNG có soft delete — financial records)
-- `[ ]` Rule: Mỗi transaction phải có ít nhất 1 DEBIT và 1 CREDIT entry
-- `[ ]` Rule: SUM(DEBIT) == SUM(CREDIT) trong cùng transaction — validation
-- `[ ]` `LedgerService.recordDoubleEntry(debitAccount, creditAccount, amount)`
-- `[ ]` APIs:
-  - `GET /api/accounts/{id}/transactions?page=0&size=20&from=date&to=date`
-  - `GET /api/transactions/{id}` — Chi tiết giao dịch + ledger entries
-- `[ ]` Test: Verify SUM(DEBIT) == SUM(CREDIT), immutability (không cho update/delete)
+- `[x]` Domain: `LedgerEntry` (DEBIT/CREDIT), `Transaction` aggregate
+- `[x]` Flyway V5: `transactions`, `ledger_entries` tables (Bất biến IMMUTABLE — không có soft delete/update)
+- `[x]` Rule: Mỗi transaction phải có ít nhất 1 DEBIT và 1 CREDIT entry
+- `[x]` Rule: SUM(DEBIT) == SUM(CREDIT) trong cùng transaction — validation invariant
+- `[x]` `LedgerApplicationService.recordDoubleEntry(debitAccount, creditAccount, amount)`
+- `[x]` APIs:
+  - `GET /api/v1/accounts/{id}/transactions?limit=20`
+  - `GET /api/v1/transactions/{id}` — Chi tiết giao dịch + ledger entries
+  - `POST /api/v1/ledger/record` — Thử nghiệm hạch toán sổ kép
+- `[x]` Angular: `LedgerService`, `AccountsPage` hiển thị sổ nhật ký bút toán, Modal bằng chứng cân bằng sổ sách & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Verify SUM(DEBIT) == SUM(CREDIT), immutability (Maven & Angular Build 100% SUCCESS)
 
 **Kỹ thuật phỏng vấn cần giải thích được:**
 - Double-Entry Bookkeeping là gì? Tại sao banking dùng?

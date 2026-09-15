@@ -80,14 +80,15 @@
 
 ---
 
-## 📒 Sprint 06 — Ledger Module
+## 📒 Sprint 06 — Ledger Module (Double-Entry Bookkeeping)
 
-- `[ ]` Domain: LedgerEntry, Transaction aggregate
-- `[ ]` Flyway V5: transactions, ledger_entries (IMMUTABLE)
-- `[ ]` Double-Entry validation: SUM(DEBIT) == SUM(CREDIT)
-- `[ ]` LedgerService.recordDoubleEntry()
-- `[ ]` API: GET /accounts/:id/transactions, GET /transactions/:id
-- `[ ]` Test: Balance invariant, immutability
+- `[x]` Domain: `LedgerEntry` (DEBIT/CREDIT), `Transaction` aggregate root với quy tắc bất biến `SUM(DEBIT) == SUM(CREDIT)`
+- `[x]` Flyway V5: `transactions` & `ledger_entries` (Bất biến IMMUTABLE, không cho soft delete/update)
+- `[x]` Double-Entry validation: Tự động kiểm tra tính cân bằng sổ sách trong Aggregate Root
+- `[x]` `LedgerApplicationService.recordDoubleEntry()` & xóa cache Redis
+- `[x]` API: `GET /api/v1/accounts/{id}/transactions`, `GET /api/v1/transactions/{id}`, `POST /api/v1/ledger/record`
+- `[x]` Angular: `LedgerService`, `AccountsPage` hiển thị sổ nhật ký bút toán, Modal bằng chứng cân bằng sổ sách & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Verify `SUM(DEBIT) == SUM(CREDIT)`, immutability (Maven & Angular Build 100% SUCCESS)
 
 ---
 
