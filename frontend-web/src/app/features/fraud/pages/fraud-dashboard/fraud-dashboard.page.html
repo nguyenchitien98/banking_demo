@@ -1,0 +1,270 @@
+<div class="fraud-container">
+  <!-- Dynamic Header Banner -->
+  <div class="header-banner">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1>Hệ Thống Đánh Giá & Phát Hiện Gian Lận (Fraud Rule Engine)</h1>
+        <p>Tính toán điểm rủi ro Risk Score (0–100) theo thời gian thực và tự động kích hoạt máy trạng thái xử lý giao dịch</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <span>⚠️ {{ errorMessage }}</span>
+  </div>
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span>🎉 {{ successMessage }}</span>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-nav">
+    <button class="tab-btn" [class.active]="activeTab === 'simulator'" (click)="activeTab = 'simulator'">
+      🧪 Mô Phỏng Giả Lập Rủi Ro
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
+      🚨 Trung Tâm Cảnh Báo ({{ alerts.length }})
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'rules'" (click)="activeTab = 'rules'">
+      ⚙️ Quản Lý Quy Tắc Rules ({{ rules.length }})
+    </button>
+  </div>
+
+  <!-- TAB 1: SIMULATOR -->
+  <div *ngIf="activeTab === 'simulator'" class="tab-content fade-in">
+    <div class="two-column-layout">
+      <!-- Input Config Form -->
+      <div class="card config-card">
+        <h3>1. Cấu Hình Tham Số Giao Dịch Thử Nghiệm</h3>
+
+        <div class="form-group">
+          <label>Tài khoản gửi:</label>
+          <input type="text" [(ngModel)]="simSourceAccountId" (ngModelChange)="evaluateSimulation()" class="text-input">
+        </div>
+
+        <div class="form-group">
+          <label>Tài khoản nhận:</label>
+          <input type="text" [(ngModel)]="simTargetAccountNumber" (ngModelChange)="evaluateSimulation()" class="text-input">
+        </div>
+
+        <div class="form-group">
+          <label>Số tiền giao dịch (VND):</label>
+          <input type="number" [(ngModel)]="simAmount" (ngModelChange)="evaluateSimulation()" class="amount-input">
+        </div>
+
+        <div class="form-group">
+          <label>Số lượng giao dịch trong 60s qua (Velocity):</label>
+          <input type="number" [(ngModel)]="simVelocity" (ngModelChange)="evaluateSimulation()" class="amount-input">
+        </div>
+
+        <div class="form-group">
+          <label>Giờ phát sinh giao dịch trong ngày (0 - 23h):</label>
+          <div class="range-row">
+            <input type="range" min="0" max="23" [(ngModel)]="simHour" (ngModelChange)="evaluateSimulation()" class="range-input">
+            <span class="range-val">{{ simHour }}:00 {{ (simHour >= 0 && simHour <= 4) ? '🌙 (Ban đêm)' : '☀️ (Ban ngày)' }}</span>
+          </div>
+        </div>
+
+        <div class="checkbox-group margin-top-15">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="simIsNewDevice" (change)="evaluateSimulation()">
+            <span>📱 Giao dịch từ Thiết bị mới chưa từng xác thực</span>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="simIsNewBeneficiary" (change)="evaluateSimulation()">
+            <span>👤 Chuyển tiền cho Tài khoản thụ hưởng mới lần đầu</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Result Score Display -->
+      <div class="card result-card text-center" *ngIf="evalResult">
+        <h3>2. Kết Quả Phân Tích Risk Score (Real-time Engine)</h3>
+
+        <!-- Risk Meter Visual Gauge -->
+        <div class="risk-gauge-container">
+          <div class="risk-score-circle" 
+            [class.score-low]="evalResult.riskAction === 'ALLOW'" 
+            [class.score-medium]="evalResult.riskAction === 'OTP_REQUIRED'" 
+            [class.score-high]="evalResult.riskAction === 'BLOCK'">
+            <span class="score-number">{{ evalResult.riskScore }}</span>
+            <span class="score-max">/100</span>
+          </div>
+        </div>
+
+        <div class="action-result-box margin-top-15">
+          <span class="action-badge" 
+            [class.badge-allow]="evalResult.riskAction === 'ALLOW'" 
+            [class.badge-otp]="evalResult.riskAction === 'OTP_REQUIRED'" 
+            [class.badge-block]="evalResult.riskAction === 'BLOCK'">
+            {{ evalResult.riskAction === 'ALLOW' ? '✅ ALLOW — Tự Động Phê Duyệt' : 
+               evalResult.riskAction === 'OTP_REQUIRED' ? '🔐 OTP REQUIRED — Bắt Buộc Xác Thực OTP 2 Lớp' : 
+               '⛔ BLOCK — Từ Chối & Ghi Fraud Alert' }}
+          </span>
+        </div>
+
+        <div class="triggered-rules-list margin-top-20 text-left">
+          <h4>Quy Tắc Phát Hiện Vi Phạm ({{ evalResult.triggeredRules.length }}):</h4>
+          
+          <div *ngIf="evalResult.triggeredRules.length === 0" class="no-violation">
+            <span>🎉 Giao dịch an toàn. Không vi phạm bất kỳ quy tắc rủi ro nào.</span>
+          </div>
+
+          <div *ngFor="let ruleCode of evalResult.triggeredRules" class="rule-tag-item">
+            <span class="tag-code">{{ ruleCode }}</span>
+            <span class="tag-desc">Dấu hiệu bất thường được ghi nhận bởi hệ thống</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: ALERTS CENTER -->
+  <div *ngIf="activeTab === 'alerts'" class="tab-content fade-in">
+    <div class="card">
+      <h3>🚨 Trung Tâm Quản Lý Cảnh Báo Gian Lận (Fraud Alerts Center)</h3>
+
+      <div *ngIf="alerts.length === 0" class="empty-state">
+        <p>Hiện chưa có cảnh báo gian lận nào cần phê duyệt.</p>
+      </div>
+
+      <div *ngIf="alerts.length > 0" class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã Alert ID</th>
+              <th>Mã Giao Dịch</th>
+              <th>Tài Khoản Nguồn</th>
+              <th>Số Tiền</th>
+              <th>Điểm Risk Score</th>
+              <th>Các Quy Tắc Vi Phạm</th>
+              <th>Trạng Thái</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alert of alerts">
+              <td><strong class="code-id">{{ alert.id }}</strong></td>
+              <td>{{ alert.transactionId || 'N/A' }}</td>
+              <td>{{ alert.sourceAccountId }}</td>
+              <td class="amount-col">{{ alert.amount | number:'1.0-0' }} VND</td>
+              <td><span class="score-badge">{{ alert.riskScore }}/100</span></td>
+              <td><span class="rule-list-text">{{ alert.triggeredRules }}</span></td>
+              <td>
+                <span class="status-badge" [class.status-pending]="alert.status === 'PENDING_REVIEW'" [class.status-resolved]="alert.status === 'RESOLVED'" [class.status-false]="alert.status === 'FALSE_POSITIVE'">
+                  {{ alert.status }}
+                </span>
+              </td>
+              <td>
+                <button (click)="openReviewModal(alert)" class="btn-review">🔍 Duyệt Alert</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: RULES MANAGEMENT -->
+  <div *ngIf="activeTab === 'rules'" class="tab-content fade-in">
+    <div class="card">
+      <h3>⚙️ Quản Lý Cấu Hình Quy Tắc Gian Lận (Fraud Rules Engine)</h3>
+
+      <div class="rules-grid">
+        <div *ngFor="let rule of rules" class="rule-card" [class.rule-disabled]="!rule.isActive">
+          <div class="rule-card-header">
+            <span class="rule-code-badge">{{ rule.ruleCode }}</span>
+            <span class="score-weight">+{{ rule.weightScore }} điểm</span>
+          </div>
+          <h4>{{ rule.ruleName }}</h4>
+          <p class="rule-desc">{{ rule.description }}</p>
+          <div class="rule-footer">
+            <span class="status-indicator" [class.active]="rule.isActive">
+              {{ rule.isActive ? '● Đang Kích Hoạt' : '○ Tắt Quy Tắc' }}
+            </span>
+            <button (click)="toggleRuleActive(rule)" class="btn-toggle">
+              {{ rule.isActive ? 'Tắt Quy Tắc' : 'Bật Quy Tắc' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW ALERT MODAL -->
+  <div *ngIf="showReviewModal && selectedAlert" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔍 Phê Duyệt Cảnh Báo Gian Lận [{{ selectedAlert.id }}]</h3>
+        <button (click)="showReviewModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-summary-box">
+          <div>Tài khoản nguồn: <strong>{{ selectedAlert.sourceAccountId }}</strong></div>
+          <div>Số tiền: <strong>{{ selectedAlert.amount | number:'1.0-0' }} VND</strong></div>
+          <div>Vi phạm: <strong>{{ selectedAlert.triggeredRules }}</strong></div>
+        </div>
+
+        <div class="form-group margin-top-15">
+          <label>Quyết định xử lý của Admin:</label>
+          <select [(ngModel)]="reviewStatus" class="select-input">
+            <option value="RESOLVED">✅ RESOLVED — Xác nhận Gian lận & Đã Xử lý Chặn</option>
+            <option value="FALSE_POSITIVE">⚠️ FALSE_POSITIVE — Cảnh báo nhầm (Giao dịch hợp lệ)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ghi chú phân tích của Admin:</label>
+          <textarea rows="3" [(ngModel)]="reviewNotes" placeholder="Nhập nguyên nhân và kết quả xác minh..." class="text-input"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showReviewModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="submitReview()" [disabled]="loading" class="btn-primary">Hoàn Tất Duyệt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANDATORY VERIFICATION GUIDE PANEL (RULE[AGENTS.md]) -->
+  <div class="card verification-panel margin-top-30">
+    <div class="panel-header">
+      <span class="icon">🧪</span>
+      <h3>Hướng Dẫn Kiểm Thử Thủ Công — Sprint 16: Fraud Detection Rule Engine</h3>
+    </div>
+    <div class="panel-body">
+      <p>Khu vực này hướng dẫn các kỹ sư kiểm thử xác minh nguyên lý tính điểm rủi ro Risk Score và máy trạng thái xử lý giao dịch:</p>
+      
+      <div class="test-scenarios">
+        <div class="scenario-item">
+          <strong>Kịch bản 1: Giao dịch bình thường (Risk Score < 40 -> ALLOW)</strong>
+          <ul>
+            <li>Ở tab Giả lập, chọn số tiền <code>5.000.000đ</code>, không tick Thiết bị mới/Thụ hưởng mới, giờ giao dịch 14:00.</li>
+            <li><strong>Kỳ vọng:</strong> Risk Score = 0/100, Hành động <code>ALLOW</code> (Cho phép tự động).</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 2: Giao dịch có nguy cơ vừa (Risk Score 40-70 -> OTP REQUIRED)</strong>
+          <ul>
+            <li>Chọn số tiền <code>60.000.000đ</code> và tick <strong>"Giao dịch từ Thiết bị mới"</strong>.</li>
+            <li><strong>Kỳ vọng:</strong> Trùng Rule 3 (NEW_DEVICE +50 điểm). Tổng Risk Score = 50/100 $\rightarrow$ Hành động <code>OTP REQUIRED</code> (Yêu cầu OTP 2 lớp).</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 3: Giao dịch rủi ro cao (Risk Score > 70 -> BLOCK & Auto Alert)</strong>
+          <ul>
+            <li>Chọn số tiền <code>120.000.000đ</code>, tick Thiết bị mới (+50) + Thụ hưởng mới (+20) + Đêm khuya 2 AM (+15).</li>
+            <li><strong>Kỳ vọng:</strong> Tổng Risk Score = 100/100 $\rightarrow$ Hành động <code>BLOCK</code>. Hệ thống tự động đẩy 1 bản tin Fraud Alert mới vào tab <strong>"🚨 Trung Tâm Cảnh Báo"</strong> để Admin duyệt.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

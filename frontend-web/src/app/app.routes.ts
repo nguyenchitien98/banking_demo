@@ -56,6 +56,13 @@ export const routes: Routes = [
             (m) => m.NOTIFICATIONS_ROUTES
           ),
       },
+      {
+        path: 'fraud',
+        loadChildren: () =>
+          import('./features/fraud/fraud.routes').then(
+            (m) => m.FRAUD_ROUTES
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

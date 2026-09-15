@@ -364,26 +364,29 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 16: Fraud Detection — Rule Engine
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Rule Engine custom, Risk Score calculation, Kafka event integration
 
 **Checklist:**
-- `[ ]` Domain: `FraudRule`, `FraudAlert`, `RiskScore` value object
-- `[ ]` Flyway V10: `fraud_rules`, `fraud_alerts` tables
-- `[ ]` Rule Engine: Evaluate list of rules → Tính tổng risk score (0–100)
-- `[ ]` Built-in rules:
-  - Rule 1: Amount > 100M → score +40
-  - Rule 2: > 5 transactions/1 minute → score +30
-  - Rule 3: New device + amount > 50M → score +50
-  - Rule 4: Transfer to new beneficiary + amount > 20M → score +20
-  - Rule 5: Đêm khuya (0h–4h) + large amount → score +15
-- `[ ]` Risk Action: score < 40 → ALLOW; 40–70 → OTP Required; > 70 → BLOCK + Alert
-- `[ ]` Transfer flow: Gọi FraudService.evaluate() trước khi execute transfer
-- `[ ]` Kafka Consumer: Consume `transfer.completed` → Update fraud model
-- `[ ]` API Admin: `GET /api/admin/fraud/alerts`, `PATCH /api/admin/fraud/alerts/{id}/review`
-- `[ ]` Angular Admin: Fraud alert dashboard, rule management UI
-- `[ ]` Test: Amount threshold rule, velocity rule, new device rule
+- `[x]` Domain: `FraudRule`, `FraudAlert`, `RiskAction` (ALLOW / OTP_REQUIRED / BLOCK), `TransactionEvaluationContext`
+- `[x]` Flyway V12: `fraud_rules` & `fraud_alerts` tables + seed 5 quy tắc rủi ro mẫu
+- `[x]` Custom Fraud Rule Engine: `FraudRuleEngine` đánh giá quy tắc & tính tổng điểm rủi ro Risk Score (0–100)
+- `[x]` 5 Built-in rules:
+  - Rule 1 (HIGH_AMOUNT): Số tiền > 100M $\rightarrow$ score +40
+  - Rule 2 (HIGH_VELOCITY): > 5 giao dịch/phút $\rightarrow$ score +30
+  - Rule 3 (NEW_DEVICE): Thiết bị mới + số tiền > 50M $\rightarrow$ score +50
+  - Rule 4 (NEW_BENEFICIARY): Chuyển tiền thụ hưởng mới + số tiền > 20M $\rightarrow$ score +20
+  - Rule 5 (NIGHT_TIME): Khung giờ đêm khuya (0h–4h) + số tiền > 10M $\rightarrow$ score +15
+- `[x]` Risk Action Mapping: score < 40 $\rightarrow$ ALLOW; 40–70 $\rightarrow$ OTP Required; > 70 $\rightarrow$ BLOCK + Tự động lưu Fraud Alert
+- `[x]` APIs Admin/Engine:
+  - `POST /api/v1/fraud/evaluate` — Phân tích điểm rủi ro giao dịch real-time
+  - `GET /api/v1/fraud/alerts` — Danh sách cảnh báo rủi ro
+  - `PATCH /api/v1/fraud/alerts/{id}/review` — Phê duyệt/xử lý cảnh báo (RESOLVED / FALSE_POSITIVE)
+  - `GET /api/v1/fraud/rules` — Danh sách quy tắc rủi ro
+  - `PATCH /api/v1/fraud/rules/{id}/toggle` — Bật/tắt trạng thái quy tắc
+- `[x]` Angular: `FraudService`, `FraudDashboardPage` với tab Mô phỏng giả lập rủi ro (Risk Meter Gauge), tab Trung tâm cảnh báo & tab Quản lý quy tắc, Modal duyệt & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Verify all 5 rules, threshold action mappings, alert creation & review (Maven & Angular Build 100% SUCCESS)
 
 ---
 

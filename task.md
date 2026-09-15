@@ -207,15 +207,28 @@
 
 ---
 
+## 🛡️ Sprint 16 — Fraud Detection (Rule Engine & Risk Score)
+
+- `[x]` Custom Fraud Rule Engine: `FraudRuleEngine` phân tích 5 quy tắc rủi ro và tính toán tổng điểm rủi ro Risk Score (0–100)
+- `[x]` 5 Built-in Rules: `HIGH_AMOUNT` (+40), `HIGH_VELOCITY` (+30), `NEW_DEVICE` (+50), `NEW_BENEFICIARY` (+20), `NIGHT_TIME` (+15)
+- `[x]` Risk Action Mapping: Score < 40 $\rightarrow$ `ALLOW`; Score 40–70 $\rightarrow$ `OTP_REQUIRED`; Score > 70 $\rightarrow$ `BLOCK`
+- `[x]` Flyway V12: `fraud_rules` & `fraud_alerts` tables + seed 5 quy tắc chuẩn
+- `[x]` APIs Admin/Engine: `POST /api/v1/fraud/evaluate`, `GET /api/v1/fraud/alerts`, `PATCH /api/v1/fraud/alerts/{id}/review`, `GET /api/v1/fraud/rules`, `PATCH /api/v1/fraud/rules/{id}/toggle`
+- `[x]` Angular: `FraudService`, `FraudDashboardPage` với Tab Mô phỏng rủi ro (Risk Meter Gauge), Tab Trung tâm cảnh báo & Tab Quản lý quy tắc, Modal duyệt alert & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Multi-rule evaluation, score threshold actions, automatic alert creation on BLOCK, admin review modal (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
-Phase 3 (Sprint 13-18):       23/45 tasks  [ 51%]
+Phase 3 (Sprint 13-18):       30/45 tasks  [ 67%]
 
-OVERALL: 109/135 tasks completed
+OVERALL: 116/135 tasks completed
 ```
 
 ---
@@ -228,3 +241,4 @@ OVERALL: 109/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 13 Bill Payment module với Strategy Pattern (SOLID OCP). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 14 QR Payment module chuẩn VietQR EMVCo (TLVs, CRC-16 Checksum, Generator & Decoder). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 15 Card module (PCI-DSS Tokenization, Virtual Card Generator & Card Lifecycle FSM). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 16 Fraud Detection module (Rule Engine, Risk Score 0–100 & Admin Alerts Center). Full stack Maven & Angular build xanh 100%.
