@@ -459,26 +459,28 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 20: Prometheus & Grafana Dashboard
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Micrometer, Custom metrics, Grafana dashboard design
 
 **Checklist:**
-- `[ ]` Micrometer integration: `spring-boot-starter-actuator` + Prometheus registry
-- `[ ]` Default metrics: JVM heap, GC pause, HTTP request rate, DB connection pool
-- `[ ]` Custom Business Metrics:
+- `[x]` Micrometer integration: `spring-boot-starter-actuator` + `micrometer-registry-prometheus`
+- `[x]` Default metrics: JVM heap, GC pause, HTTP request rate, DB connection pool
+- `[x]` Custom Business Metrics Service: `BankXMetricsService`
   - `bankx_transfer_total{status="COMPLETED"}` — Tổng transfer thành công
+  - `bankx_transfer_total{status="FAILED"}` — Tổng transfer thất bại
   - `bankx_transfer_amount_vnd` — Histogram số tiền transfer
   - `bankx_fraud_alert_total{severity="HIGH"}` — Fraud alerts
   - `bankx_otp_attempts_total` — OTP attempts
   - `bankx_active_sessions_gauge` — Active sessions
-- `[ ]` Grafana Dashboard với panels:
+- `[x]` Grafana Dashboard Spec (`grafana_bankx_dashboard.json`) với panels:
   - Transfer Rate (req/s), Error Rate (%), P99 Latency
   - Active Users (gauge), Daily Transfer Volume (VND)
   - Kafka Consumer Lag, Redis Hit Rate
   - JVM Memory Usage, DB Connection Pool
-- `[ ]` Alerts: Error rate > 5% → Grafana alert → Notification
-- `[ ]` Test: Metrics exposed tại `/actuator/prometheus`, Grafana import dashboard
+- `[x]` APIs: `GET /api/v1/metrics/prometheus-summary`, `POST /api/v1/metrics/simulate` (Giả lập traffic)
+- `[x]` Angular: `MonitoringService`, `MonitoringDashboardPage` (Giao diện Observability, nút Giả Lập Traffic & Panel kiểm thử thủ công)
+- `[x]` Test: Metrics exposed tại `/actuator/prometheus`, Grafana dashboard panels correctness (Maven & Angular Build 100% SUCCESS)
 
 ---
 

@@ -1,0 +1,149 @@
+<div class="monitoring-container">
+  <!-- Page Header -->
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-dark mb-1">
+        <i class="bi bi-activity text-danger me-2"></i> Prometheus & Grafana — System Observability
+      </h2>
+      <p class="text-muted small mb-0">Giám sát hiệu năng hệ thống ngân hàng thời gian thực: Custom Business Metrics, Micrometer & Actuator</p>
+    </div>
+    <div class="header-actions d-flex gap-2">
+      <a href="/actuator/prometheus" target="_blank" class="btn btn-outline-dark btn-sm fw-bold">
+        <i class="bi bi-code-slash me-1"></i> /actuator/prometheus
+      </a>
+      <button class="btn btn-danger btn-sm fw-bold" (click)="simulateTraffic()" [disabled]="simulating">
+        <span *ngIf="!simulating"><i class="bi bi-play-circle-fill me-1"></i> Giả Lập Traffic (+20 Events)</span>
+        <span *ngIf="simulating" class="spinner-border spinner-border-sm me-1"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ successMessage }}
+  </div>
+
+  <!-- VERIFICATION GUIDE PANEL (Mandatory RULE[AGENTS.md]) -->
+  <div class="card verification-guide-card mb-4 shadow-sm border-0">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+      <span class="fw-bold"><i class="bi bi-journal-check me-2 text-warning"></i> Hướng Dẫn Kiểm Thử Thủ Công (Verification Guide Panel)</span>
+      <span class="badge bg-warning text-dark fw-bold">Sprint 20 Rule</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div *ngFor="let step of guideSteps; let i = index" class="col-md-3">
+          <div class="guide-step-box p-3 h-100 rounded border">
+            <div class="step-num text-primary fw-bold mb-1">0{{ i + 1 }}</div>
+            <div class="step-title fw-bold text-dark mb-1">{{ step.title }}</div>
+            <div class="step-desc text-muted small">{{ step.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Overview Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="metric-card shadow-sm text-white bg-gradient-success p-3 rounded">
+        <div class="metric-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="metric-value">{{ metrics.transferCompletedTotal | number }}</div>
+        <div class="metric-label">Tổng Transfer Thành Công (COMPLETED)</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="metric-card shadow-sm text-white bg-gradient-danger p-3 rounded">
+        <div class="metric-icon"><i class="bi bi-x-circle"></i></div>
+        <div class="metric-value">{{ metrics.transferFailedTotal | number }}</div>
+        <div class="metric-label">Tổng Transfer Thất Bại (FAILED)</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="metric-card shadow-sm text-white bg-gradient-warning p-3 rounded">
+        <div class="metric-icon"><i class="bi bi-shield-exclamation"></i></div>
+        <div class="metric-value">{{ metrics.fraudAlertHighTotal }}</div>
+        <div class="metric-label">Cảnh Báo Fraud (HIGH Severity)</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="metric-card shadow-sm text-white bg-gradient-primary p-3 rounded">
+        <div class="metric-icon"><i class="bi bi-person-check"></i></div>
+        <div class="metric-value">{{ metrics.activeSessionsGauge }}</div>
+        <div class="metric-label">Active User Sessions (Gauge)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grafana Observability Dashboard Panels Grid -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-speedometer me-2 text-primary"></i> Latency & Request Rates</span>
+          <span class="badge bg-success">Normal P99 &lt; 100ms</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-around text-center py-3">
+            <div>
+              <div class="display-6 fw-bold text-primary">{{ metrics.p99LatencyMs }} ms</div>
+              <div class="small text-muted">P99 System Latency</div>
+            </div>
+            <div class="border-end"></div>
+            <div>
+              <div class="display-6 fw-bold text-info">{{ metrics.otpAttemptsTotal }}</div>
+              <div class="small text-muted">OTP Attempts Counter</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-hdd-network me-2 text-danger"></i> Infrastructure Health Indicators</span>
+          <span class="badge bg-info text-dark">Prometheus Micrometer</span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center py-2">
+            <div class="col-4">
+              <div class="fw-bold text-success fs-4">{{ metrics.redisHitRatePercentage }}%</div>
+              <div class="small text-muted">Redis Cache Hit Rate</div>
+            </div>
+            <div class="col-4 border-start border-end">
+              <div class="fw-bold text-dark fs-4">{{ metrics.kafkaConsumerLag }}</div>
+              <div class="small text-muted">Kafka Consumer Lag</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold text-primary fs-4">{{ metrics.dbConnectionPoolActive }} / 20</div>
+              <div class="small text-muted">HikariCP DB Pool</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grafana JSON Spec Spec Export Card -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-filetype-json me-2 text-warning"></i> Cấu Hình Grafana Dashboard JSON Specification</span>
+      <span class="badge bg-secondary">grafana_bankx_dashboard.json</span>
+    </div>
+    <div class="card-body">
+      <p class="small text-muted">File cấu hình Dashboard Grafana chuẩn đã được tích hợp tự động vào dự án tại đường dẫn: <code>backend/bankx-banking-core/src/main/resources/monitoring/grafana_bankx_dashboard.json</code>.</p>
+      <pre class="bg-light p-3 rounded small text-dark border"><code>&#123;
+  "title": "BankX — System Observability & Business Metrics Dashboard",
+  "panels": [
+    &#123; "title": "Transfer Request Rate (req/s)", "expr": "rate(bankx_transfer_total[1m])" &#125;,
+    &#123; "title": "System P99 Latency (ms)", "expr": "histogram_quantile(0.99, ...)" &#125;,
+    &#123; "title": "Active User Sessions", "expr": "bankx_active_sessions_gauge" &#125;,
+    &#123; "title": "High Severity Fraud Alerts", "expr": "bankx_fraud_alert_total&#123;severity=\"HIGH\"&#125;" &#125;
+  ]
+&#125;</code></pre>
+    </div>
+  </div>
+</div>

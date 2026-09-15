@@ -77,6 +77,13 @@ export const routes: Routes = [
             (m) => m.ADMIN_ROUTES
           ),
       },
+      {
+        path: 'monitoring',
+        loadChildren: () =>
+          import('./features/monitoring/monitoring.routes').then(
+            (m) => m.MONITORING_ROUTES
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

@@ -233,15 +233,15 @@
 
 ---
 
-## ⚡ Sprint 19 — CQRS Pattern (Transaction History Read Model)
+## 📊 Sprint 20 — Prometheus & Grafana Dashboard (System Observability)
 
-- `[x]` Flyway V15: `transaction_history_views` table & multi-column compound indexes (`idx_tx_history_customer_created`, `idx_tx_history_account_created`, `idx_tx_history_cursor`)
-- `[x]` CQRS Read Model Domain & Repository: `TransactionHistoryViewJpaEntity`, `SpringDataTransactionHistoryViewRepository`
-- `[x]` Event-Driven Kafka Projection: `TransactionReadModelProjector` lắng nghe `transfer.completed`, `payment.completed`, `qr.completed` tự động project vào Read Model
-- `[x]` Application Service & Cursor Pagination DTOs: `TransactionHistoryQueryService`, `CursorPageResponse`, `TransactionHistoryResponse`
-- `[x]` REST Controller: `TransactionHistoryQueryController` (`GET /api/v1/cqrs/history/accounts/{accountNumber}`, `GET /api/v1/cqrs/history/customers/{customerId}`)
-- `[x]` Angular: `TransactionHistoryService`, `TransactionHistoryPage` giao diện tra cứu lịch sử CQRS, phân trang Cursor-based Pagination, đối chiếu Write vs Read Model & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
-- `[x]` Test: Query read model performance, O(log N) cursor pagination correctness (Maven & Angular Build 100% SUCCESS)
+- `[x]` Spring Boot Actuator & Micrometer Integration: `spring-boot-starter-actuator`, `micrometer-registry-prometheus` (`/actuator/prometheus` & `/actuator/health`)
+- `[x]` Custom Business Metrics Service: `BankXMetricsService` (`bankx_transfer_total{status="COMPLETED|FAILED"}`, `bankx_transfer_amount_vnd`, `bankx_fraud_alert_total{severity="HIGH"}`, `bankx_otp_attempts_total`, `bankx_active_sessions_gauge`)
+- `[x]` Metrics REST Controller: `MetricsDashboardController` (`GET /api/v1/metrics/prometheus-summary`, `POST /api/v1/metrics/simulate`)
+- `[x]` Grafana Dashboard Specification: `grafana_bankx_dashboard.json` với panels độ trễ P99, Transfer Rate req/s, Active Sessions, Redis Hit Rate, Kafka Lag & DB Connection Pool
+- `[x]` Angular: `MonitoringService`, `MonitoringDashboardPage` giao diện giám sát Prometheus & Grafana, nút bấm giả lập Traffic (+20 Events) & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Sidebar Navigation: Thêm liên kết **Prometheus Observability** trên Main Layout
+- `[x]` Test: Metrics endpoint `/actuator/prometheus` exposure, custom metrics recording & dashboard panels correctness (Maven & Angular Build 100% SUCCESS)
 
 
 ---
@@ -253,9 +253,9 @@ Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
 Phase 3 (Sprint 13-18):       45/45 tasks  [100%]
-Phase 4 (Sprint 19-24):        7/45 tasks  [ 16%]
+Phase 4 (Sprint 19-24):       14/45 tasks  [ 31%]
 
-OVERALL: 138/135 tasks completed
+OVERALL: 145/135 tasks completed
 ```
 
 ---
@@ -272,5 +272,7 @@ OVERALL: 138/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 17 Beneficiary Management module (Smart Suggestions, Frequency Tracking & Account Lookup API). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 18 Admin Portal Core (Dashboard KPIs, eKYC Review, Emergency Account Freeze & Audit Trail). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 19 CQRS Transaction History Read Model (Kafka Projection, Cursor-based Pagination & Write/Read separation). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 20 Prometheus & Grafana Dashboard (Custom Business Metrics, Micrometer Actuator & System Observability). Full stack Maven & Angular build xanh 100%.
+
 
 

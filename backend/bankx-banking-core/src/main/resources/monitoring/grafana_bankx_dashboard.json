@@ -1,0 +1,80 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "title": "BankX — System Observability & Business Metrics Dashboard",
+  "tags": ["bankx", "prometheus", "micrometer", "banking"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Transfer Request Rate (req/s)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(bankx_transfer_total[1m])",
+          "legendFormat": "Status {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "System P99 Latency (ms)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "P99 Latency"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Active User Sessions",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bankx_active_sessions_gauge",
+          "legendFormat": "Active Sessions"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "High Severity Fraud Alerts",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bankx_fraud_alert_total{severity=\"HIGH\"}",
+          "legendFormat": "High Risk Alerts"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "JVM Heap Memory Usage (MB)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "Heap Used"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "HikariCP DB Connection Pool Active",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active",
+          "legendFormat": "Active Connections"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
