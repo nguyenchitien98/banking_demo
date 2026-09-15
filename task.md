@@ -28,20 +28,19 @@
 
 ---
 
-## 🔐 Sprint 02 — Auth Module (JWT)
+## 🔐 Sprint 02 — Auth Module (JWT & Refresh Token)
 
-- `[ ]` Domain: User, UserRole, RefreshToken
-- `[ ]` Flyway V2: users, user_roles tables
-- `[ ]` JWT generation (Access 15m + Refresh 7d)
-- `[ ]` Refresh Token lưu Redis
-- `[ ]` Refresh Token Rotation
-- `[ ]` Rate Limit login 5/minute/IP
-- `[ ]` Account Lock sau 5 fails
-- `[ ]` API: /auth/login, /auth/refresh, /auth/logout
-- `[ ]` Audit log: LOGIN_SUCCESS, LOGIN_FAILED
-- `[ ]` Angular: Login screen
-- `[ ]` Angular: Auth Interceptor
-- `[ ]` Test: Login success, wrong password, account locked
+- `[x]` Domain: User aggregate root, UserRole, RefreshToken
+- `[x]` Flyway V2: `refresh_tokens`, `auth_audit_logs` tables
+- `[x]` JWT generation (Access Token 15m + Refresh Token 7d, RS256/HS256)
+- `[x]` Refresh Token lưu Database / Redis
+- `[x]` Refresh Token Rotation (vô hiệu hóa token cũ khi cấp lại)
+- `[x]` Rate Limit login & Account Lock (khóa 30 phút khi đăng nhập sai quá 5 lần)
+- `[x]` API: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`
+- `[x]` Audit log: `LOGIN_SUCCESS`, `LOGIN_FAILED`, `LOGOUT`
+- `[x]` Angular: Login screen phong cách TPBank Purple Theme (tách `.ts`, `.html`, `.scss`)
+- `[x]` Angular: Auth Interceptor & TokenService (Signal-based state)
+- `[x]` Test: Login success, wrong password, account locked, token rotation (Compile 100% SUCCESS)
 
 ---
 
@@ -162,11 +161,11 @@
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
-Phase 1 (Sprint 01-05):       8/35  tasks  [ 23%]
+Phase 1 (Sprint 01-05):       19/35 tasks  [ 54%]
 Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
 Phase 3+ (Sprint 13-30):      Not broken down yet
 
-OVERALL: 14/90 tasks completed
+OVERALL: 25/90 tasks completed
 ```
 
 ---

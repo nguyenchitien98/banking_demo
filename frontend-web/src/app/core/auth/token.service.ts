@@ -1,55 +1,56 @@
 import { Injectable } from '@angular/core';
 
-/** Key lưu trong sessionStorage — Không dùng localStorage để tự xóa khi đóng tab */
-const ACCESS_TOKEN_KEY = 'bankx_access_token';
-
 /**
- * Service quản lý JWT tokens của BankX.
- *
- * Bảo mật:
- * - Access token: Lưu sessionStorage (tự xóa khi đóng tab/browser)
- * - Refresh token: Backend lưu trong HttpOnly Cookie (không accessible từ JS)
- * - KHÔNG lưu sensitive data trong localStorage
- *
- * Lý do dùng sessionStorage thay vì localStorage:
- * Nếu dùng localStorage, token tồn tại vĩnh viễn → Rủi ro nếu XSS.
- * SessionStorage tự xóa khi đóng tab → Bảo mật hơn với tradeoff phải
- * login lại khi mở tab mới (acceptable cho banking app).
+ * Service quản lý lưu trữ và truy xuất JWT Access Token và Refresh Token phía Client.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class TokenService {
+  private readonly ACCESS_TOKEN_KEY = 'bankx_access_token';
+  private readonly REFRESH_TOKEN_KEY = 'bankx_refresh_token';
+  private readonly USER_KEY = 'bankx_user_info';
 
-  /**
-   * Lưu access token vào sessionStorage.
-   *
-   * @param token JWT access token nhận từ /auth/login hoặc /auth/refresh
-   */
-  saveAccessToken(token: string): void {
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+  /** Save Access Token */
+  setAccessToken(token: string): void {
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, token);
   }
 
-  /**
-   * Lấy access token hiện tại.
-   *
-   * @returns Access token hoặc null nếu chưa đăng nhập
-   */
+  /** Get Access Token */
   getAccessToken(): string | null {
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
   }
 
-  /**
-   * Xóa toàn bộ tokens (dùng khi logout hoặc 401).
-   */
+  /** Save Refresh Token */
+  setRefreshToken(token: string): void {
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, token);
+  }
+
+  /** Get Refresh Token */
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  /** Save User Info */
+  setUserInfo(user: any): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  /** Get User Info */
+  getUserInfo(): any {
+    const data = localStorage.getItem(this.USER_KEY);
+    return data ? JSON.parse(data) : null;
+  }
+
+  /** Clear tokens on logout */
   clearTokens(): void {
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
   }
 
-  /**
-   * Kiểm tra user đã đăng nhập chưa.
-   *
-   * @returns true nếu có access token
-   */
-  isAuthenticated(): boolean {
+  /** Check if user has token */
+  hasToken(): boolean {
     return !!this.getAccessToken();
   }
 }

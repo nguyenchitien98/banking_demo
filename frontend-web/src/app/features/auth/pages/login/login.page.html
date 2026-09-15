@@ -1,0 +1,71 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="brand-header">
+      <div class="brand-logo">
+        <span class="logo-icon">🏦</span>
+        <span class="logo-text">Bank<span class="highlight">X</span></span>
+      </div>
+      <p class="brand-subtitle">Ngân hàng số phong cách TPBank</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div *ngIf="errorMessage()" class="alert-error">
+        <span class="alert-icon">⚠️</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+
+      <div class="form-group">
+        <label for="username">Tên đăng nhập / Số điện thoại</label>
+        <div class="input-wrapper">
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            placeholder="Nhập tên đăng nhập"
+            [class.input-error]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid"
+          />
+        </div>
+        <span *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.hasError('required')" class="field-error">
+          Tên đăng nhập là bắt buộc
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <div class="input-wrapper">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Nhập mật khẩu"
+            [class.input-error]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+          />
+          <button type="button" class="toggle-password" (click)="toggleShowPassword()">
+            {{ showPassword() ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <span *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')" class="field-error">
+          Mật khẩu là bắt buộc
+        </span>
+      </div>
+
+      <div class="form-actions">
+        <label class="remember-me">
+          <input type="checkbox" formControlName="rememberMe" />
+          <span>Ghi nhớ đăng nhập</span>
+        </label>
+        <a href="#" class="forgot-password">Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="isLoading()">
+        <span *ngIf="!isLoading()">ĐĂNG NHẬP</span>
+        <span *ngIf="isLoading()" class="spinner">Đang xử lý...</span>
+      </button>
+
+      <div class="login-footer">
+        <span>Chưa có tài khoản?</span>
+        <a href="#" class="register-link">Mở tài khoản TPBank eKYC</a>
+      </div>
+    </form>
+  </div>
+</div>

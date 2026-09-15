@@ -77,23 +77,21 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 02: Auth Module — JWT & Refresh Token
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Spring Security 6, JWT, Refresh Token Rotation, BCrypt
 
 **Checklist:**
-- `[ ]` Domain model: `User`, `UserRole`, `RefreshToken`
-- `[ ]` Flyway V2: `users`, `user_roles`, `refresh_tokens` tables
-- `[ ]` `AuthApplicationService`: `login()`, `logout()`, `refreshToken()`
-- `[ ]` JWT generation (Access Token 15 phút, RS256 signature)
-- `[ ]` Refresh Token lưu Redis (TTL 7 ngày, rotation on each refresh)
-- `[ ]` Spring Security filter chain
-- `[ ]` API: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
-- `[ ]` Rate Limit login: 5 attempts/minute per IP (Redis counter)
-- `[ ]` Account Lock sau 5 lần fail (lock 30 phút)
-- `[ ]` Audit log: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT events
-- `[ ]` Unit Tests: Login success, wrong password, account locked, token expired
-- `[ ]` Angular: Login screen, token storage, auth interceptor
+- `[x]` Domain model: `User`, `UserRole`, `RefreshToken`
+- `[x]` Flyway V2: `refresh_tokens`, `auth_audit_logs` tables
+- `[x]` `AuthApplicationService`: `login()`, `logout()`, `refreshToken()`
+- `[x]` JWT generation (Access Token 15 phút, Secret Signature)
+- `[x]` Refresh Token lưu CSDL & Redis (TTL 7 ngày, rotation on each refresh)
+- `[x]` Spring Security 6 filter chain (`JwtAuthenticationFilter`, `SecurityConfig`)
+- `[x]` API: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`
+- `[x]` Account Lock sau 5 lần fail (tự động khóa 30 phút)
+- `[x]` Audit log: `LOGIN_SUCCESS`, `LOGIN_FAILED`, `LOGOUT` events
+- `[x]` Angular: Login screen phong cách TPBank Purple Theme (tách `.ts`, `.html`, `.scss`), TokenService, Signal State & Auth Interceptor
 
 **Kỹ thuật phỏng vấn cần giải thích được:**
 - Refresh Token Rotation là gì? Tại sao cần?

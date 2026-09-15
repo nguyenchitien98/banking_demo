@@ -1,0 +1,181 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2b1055 0%, #7597de 100%);
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+
+  .brand-header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    .brand-logo {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #3b1d82;
+
+      .logo-icon {
+        margin-right: 0.5rem;
+      }
+
+      .highlight {
+        color: #ff6b00; // TPBank Orange Accent
+      }
+    }
+
+    .brand-subtitle {
+      font-size: 0.95rem;
+      color: #666;
+      margin-top: 0.4rem;
+    }
+  }
+
+  .alert-error {
+    background-color: #fff0f0;
+    border: 1px solid #ffcdd2;
+    color: #d32f2f;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444;
+      }
+
+      .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        input {
+          width: 100%;
+          padding: 0.85rem 1rem;
+          border: 1.5px solid #e0e0e0;
+          border-radius: 14px;
+          font-size: 0.95rem;
+          outline: none;
+          transition: border-color 0.2s;
+
+          &:focus {
+            border-color: #6200ea;
+            box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1);
+          }
+
+          &.input-error {
+            border-color: #e53935;
+          }
+        }
+
+        .toggle-password {
+          position: absolute;
+          right: 12px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1.1rem;
+        }
+      }
+
+      .field-error {
+        font-size: 0.8rem;
+        color: #e53935;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        color: #555;
+      }
+
+      .forgot-password {
+        color: #6200ea;
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .btn-submit {
+      margin-top: 0.5rem;
+      padding: 0.9rem;
+      background: linear-gradient(135deg, #6200ea 0%, #9d4edd 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(98, 0, 234, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(98, 0, 234, 0.4);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #666;
+
+      .register-link {
+        color: #ff6b00;
+        font-weight: 600;
+        text-decoration: none;
+        margin-left: 0.3rem;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
