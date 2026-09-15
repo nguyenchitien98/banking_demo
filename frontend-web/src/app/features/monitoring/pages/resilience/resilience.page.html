@@ -1,0 +1,153 @@
+<div class="resilience-container">
+  <!-- Page Header -->
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-dark mb-1">
+        <i class="bi bi-shield-shaded text-danger me-2"></i> Resilience4j — Circuit Breaker & Rate Limiting
+      </h2>
+      <p class="text-muted small mb-0">Mẫu chịu lỗi nâng cao: Tự động ngắt kết nối đối tác rớt mạng (Circuit 3 States), Giới hạn Rate Limiter & Fallback Mode</p>
+    </div>
+    <div class="header-actions d-flex gap-2">
+      <button class="btn btn-outline-secondary btn-sm fw-bold" (click)="resetCircuit()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Reset Circuit Breaker
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banners -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ successMessage }}
+  </div>
+
+  <!-- VERIFICATION GUIDE PANEL (Mandatory RULE[AGENTS.md]) -->
+  <div class="card verification-guide-card mb-4 shadow-sm border-0">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+      <span class="fw-bold"><i class="bi bi-journal-check me-2 text-warning"></i> Hướng Dẫn Kiểm Thử Thủ Công (Verification Guide Panel)</span>
+      <span class="badge bg-warning text-dark fw-bold">Sprint 23 Rule</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div *ngFor="let step of guideSteps; let i = index" class="col-md-3">
+          <div class="guide-step-box p-3 h-100 rounded border">
+            <div class="step-num text-primary fw-bold mb-1">0{{ i + 1 }}</div>
+            <div class="step-title fw-bold text-dark mb-1">{{ step.title }}</div>
+            <div class="step-desc text-muted small">{{ step.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State Meter Cards Grid -->
+  <div class="row g-3 mb-4">
+    <!-- State Gauge Card -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm text-center p-3 h-100" [ngClass]="{
+        'bg-gradient-success text-white': status.circuitState === 'CLOSED',
+        'bg-gradient-danger text-white': status.circuitState === 'OPEN',
+        'bg-gradient-warning text-dark': status.circuitState === 'HALF_OPEN'
+      }">
+        <div class="display-5 fw-bold mb-1">
+          <i class="bi" [ngClass]="{
+            'bi-shield-check': status.circuitState === 'CLOSED',
+            'bi-shield-slash-fill': status.circuitState === 'OPEN',
+            'bi-shield-exclamation': status.circuitState === 'HALF_OPEN'
+          }"></i>
+          {{ status.circuitState }}
+        </div>
+        <div class="fw-bold">Trạng Thái Circuit Breaker Hiện Tại</div>
+        <div class="small opacity-75 mt-1" *ngIf="status.circuitState === 'CLOSED'">Bình thường — Cho phép 100% Request truyền qua</div>
+        <div class="small opacity-75 mt-1" *ngIf="status.circuitState === 'OPEN'">TỰ ĐỘNG NGẮT — Reject 100% Request, Kích hoạt Fallback</div>
+        <div class="small opacity-75 mt-1" *ngIf="status.circuitState === 'HALF_OPEN'">THỬ NGHIỆM — Cho phép 2 Requests test phục hồi</div>
+      </div>
+    </div>
+
+    <!-- Failure Rate & Metrics Card -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="bi bi-graph-up me-2 text-primary"></i> Metrics & Failure Threshold
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-muted">Tỷ lệ lỗi (Failure Rate):</span>
+            <span class="fw-bold fs-5" [ngClass]="{'text-danger': status.failureRatePercentage >= 50, 'text-success': status.failureRatePercentage < 50}">
+              {{ status.failureRatePercentage | number:'1.0-1' }}%
+            </span>
+          </div>
+          <div class="progress mb-3" style="height: 10px;">
+            <div class="progress-bar" [ngClass]="{'bg-danger': status.failureRatePercentage >= 50, 'bg-success': status.failureRatePercentage < 50}" [style.width.%]="status.failureRatePercentage"></div>
+          </div>
+          <div class="row text-center small text-muted">
+            <div class="col-6 border-end">Calls Thành công: <strong class="text-success">{{ status.numberOfSuccessfulCalls }}</strong></div>
+            <div class="col-6">Calls Thất bại: <strong class="text-danger">{{ status.numberOfFailedCalls }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fallback Counter Card -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="bi bi-life-preserver me-2 text-warning"></i> Fallback Executions
+        </div>
+        <div class="card-body text-center">
+          <div class="display-5 fw-bold text-warning mb-1">{{ status.fallbackExecutionCount }}</div>
+          <div class="small text-muted">Lượt chuyển sang Chế Độ An Toàn (Graceful Degradation)</div>
+          <div class="badge bg-light text-dark border mt-2">Rate Limiter: Max 5 req/s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation Control Card -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="bi bi-controller me-2 text-danger"></i> Giả Lập Trạng Thái Cổng Liên Ngân Hàng
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">Tùy chỉnh trạng thái đối tác liên ngân hàng để kiểm thử phản ứng ngắt kết nối tự động của Resilience4j:</p>
+          
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-outline-danger w-50 fw-bold" (click)="toggleExternalBank(true)">
+              <i class="bi bi-wifi-off me-1"></i> Bật Lỗi Cổng DOWN (503 Error)
+            </button>
+            <button class="btn btn-outline-success w-50 fw-bold" (click)="toggleExternalBank(false)">
+              <i class="bi bi-wifi me-1"></i> Khôi Phục Cổng UP (Bình Thường)
+            </button>
+          </div>
+
+          <div class="border-top pt-3">
+            <button class="btn btn-primary w-100 fw-bold" (click)="sendSingleTransfer()" [disabled]="executing">
+              <span *ngIf="!executing"><i class="bi bi-send-fill me-1"></i> Gửi 1 Request Chuyển Tiền Liên Ngân Hàng</span>
+              <span *ngIf="executing" class="spinner-border spinner-border-sm me-1"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Execution Output Logs -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-dark text-white fw-bold">
+          <i class="bi bi-terminal me-2 text-warning"></i> Kết Quả Phản Hồi Request Mới Nhất
+        </div>
+        <div class="card-body">
+          <div *ngIf="lastExecutionResult" class="p-3 rounded font-monospace small border" [ngClass]="{
+            'bg-light text-success border-success': !lastExecutionResult.includes('Fallback') && !lastExecutionResult.includes('từ chối'),
+            'bg-light text-warning border-warning fw-bold': lastExecutionResult.includes('Fallback')
+          }">
+            {{ lastExecutionResult }}
+          </div>
+          <div *ngIf="!lastExecutionResult" class="text-muted small text-center py-4">
+            Nhấn "Gửi 1 Request Chuyển Tiền" để quan sát phản hồi từ Circuit Breaker
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

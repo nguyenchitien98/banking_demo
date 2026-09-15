@@ -233,15 +233,13 @@
 
 ---
 
-## 🔄 Sprint 22 — Saga Orchestration (Distributed Transfer & Compensating Transactions)
+## 🛡️ Sprint 23 — Circuit Breaker & Resilience4j (Fault Tolerance & Rate Limiting)
 
-- `[x]` Flyway V16: `saga_instances` & `saga_audit_steps` tables (State Machine persistence)
-- `[x]` Saga JPA Domain & Repositories: `SagaInstanceJpaEntity`, `SagaAuditStepJpaEntity`, `SpringDataSagaInstanceRepository`, `SpringDataSagaAuditStepRepository`
-- `[x]` Saga Orchestrator Application Service: `TransferSagaOrchestrator` điều phối chuỗi trạng thái (`STARTED` $\rightarrow$ `DEBIT_COMPLETED` $\rightarrow$ `CREDIT_COMPLETED` $\rightarrow$ `LEDGER_RECORDED` $\rightarrow$ `COMPLETED`)
-- `[x]` Bút toán Đảo Hoàn Tiền (Compensating Transactions): Tự động phát lệnh `REVERSE_DEBIT` và `REVERSE_CREDIT` khi sự cố xảy ra $\rightarrow$ Khôi phục số dư tài khoản nguồn về trạng thái ban đầu (`FAILED_COMPENSATED`)
-- `[x]` REST Controller: `SagaController` (`POST /api/v1/sagas/execute`, `GET /api/v1/sagas/{sagaId}`, `GET /api/v1/sagas`)
-- `[x]` Angular: `SagaService`, `SagaOrchestrationPage` giao diện trực quan hóa State Machine Stepper, Form giả lập kịch bản lỗi Credit/Ledger, Bảng Audit Step & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
-- `[x]` Test: Happy path execution, simulated credit failure compensation, state machine persistence & rollback correctness (Maven & Angular Build 100% SUCCESS)
+- `[x]` Resilience4j Integration & Configuration: `resilience4j-spring-boot3` với Circuit Breaker 3 States (`CLOSED`, `OPEN`, `HALF_OPEN`), Retry, Rate Limiter (5 req/s) & Bulkhead (10 max concurrent)
+- `[x]` InterBank Resilience Adapter: `InterBankResilienceService` bảo vệ kết nối cổng đối tác liên ngân hàng, tự động ngắt khi failure rate > 50%, kích hoạt Fallback `PENDING_MANUAL_REVIEW`
+- `[x]` Resilience REST Controller: `ResilienceController` (`POST /api/v1/resilience/interbank/transfer`, `GET /api/v1/resilience/status`, `POST /api/v1/resilience/simulate/toggle-external-bank`, `POST /api/v1/resilience/reset`)
+- `[x]` Angular: `ResilienceService`, `ResiliencePage` giao diện trực quan hóa trạng thái Circuit Breaker Gauge 3 màu, bảng đo lường Failure Rate %, Nút giả lập đối tác DOWN & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Automatic circuit breaker trip to OPEN, fallback execution, rate limiter enforcement, state recovery (Maven & Angular Build 100% SUCCESS)
 
 
 ---
@@ -253,9 +251,9 @@ Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
 Phase 3 (Sprint 13-18):       45/45 tasks  [100%]
-Phase 4 (Sprint 19-24):       28/45 tasks  [ 62%]
+Phase 4 (Sprint 19-24):       35/45 tasks  [ 78%]
 
-OVERALL: 159/135 tasks completed
+OVERALL: 166/135 tasks completed
 ```
 
 ---
@@ -275,6 +273,8 @@ OVERALL: 159/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 20 Prometheus & Grafana Dashboard (Custom Business Metrics, Micrometer Actuator & System Observability). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 21 Distributed Tracing Jaeger (OpenTelemetry SDK, W3C traceparent, MDC Log Correlation & Waterfall Span Tree). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 22 Saga Orchestration (Distributed Transfer State Machine, Compensating Transactions & Reversal Ledger). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 23 Circuit Breaker & Resilience4j (3 Circuit States, Rate Limiter 5 req/s, Fallback Graceful Degradation). Full stack Maven & Angular build xanh 100%.
+
 
 
 

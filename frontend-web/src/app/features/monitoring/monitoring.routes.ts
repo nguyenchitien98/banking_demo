@@ -14,5 +14,12 @@ export const MONITORING_ROUTES: Routes = [
       import('./pages/tracing/tracing.page').then(
         (m) => m.TracingPage
       )
+  },
+  {
+    path: 'resilience',
+    loadComponent: () =>
+      import('./pages/resilience/resilience.page').then(
+        (m) => m.ResiliencePage
+      )
   }
 ];

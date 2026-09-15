@@ -53,10 +53,40 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, prometheus
+        include: health, info, metrics, prometheus, circuitbreakers, ratelimiters
   endpoint:
     health:
       show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      interbankService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000ms
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      interbankService:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  ratelimiter:
+    instances:
+      interbankService:
+        limit-for-period: 5
+        limit-refresh-period: 1s
+        timeout-duration: 0ms
+  bulkhead:
+    instances:
+      interbankService:
+        max-concurrent-calls: 10
+        max-wait-duration: 0ms
 
 logging:
   level:

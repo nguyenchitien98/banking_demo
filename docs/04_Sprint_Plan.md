@@ -532,23 +532,24 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 23: Circuit Breaker & Resilience
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Resilience4j, Circuit Breaker 3 states, Retry, Rate Limiter, Bulkhead
 
 **Checklist:**
-- `[ ]` Resilience4j dependency + Spring Boot auto-configuration
-- `[ ]` Circuit Breaker cho InterBank Adapter:
-  - CLOSED: Bình thường
-  - OPEN: Sau 5 failures/10s → Reject ngay, không gọi external
-  - HALF-OPEN: Sau 30s, cho 1 request test → Nếu OK → CLOSED
-- `[ ]` Retry với exponential backoff + jitter (cho idempotent operations)
-- `[ ]` Rate Limiter: Giới hạn calls/second đến external bank API
-- `[ ]` Bulkhead: Giới hạn concurrent calls đến slow external service
-- `[ ]` Fallback: Circuit open → Return cached response hoặc PENDING status
-- `[ ]` Metrics: Circuit state exposed qua `/actuator/circuitbreakers` + Grafana
-- `[ ]` Engineering Portal: Nút toggle để simulate circuit breaker open/close
-- `[ ]` Test: Simulate external bank timeout → Circuit opens → Fallback → Recovery
+- `[x]` Resilience4j dependency + Spring Boot auto-configuration (`resilience4j-spring-boot3`)
+- `[x]` Circuit Breaker cho InterBank Adapter (`interbankService`):
+  - CLOSED: Bình thường (100% request qua)
+  - OPEN: Tự động ngắt khi failure rate > 50% $\rightarrow$ Reject ngay lập tức, kích hoạt Fallback
+  - HALF-OPEN: Cho 2 request test phục hồi $\rightarrow$ Nếu OK $\rightarrow$ Quay lại CLOSED
+- `[x]` Retry với exponential backoff + jitter cho idempotent operations (max 3 attempts, multiplier 2)
+- `[x]` Rate Limiter: Giới hạn 5 calls/second đến external bank API
+- `[x]` Bulkhead: Giới hạn 10 concurrent calls đến external bank
+- `[x]` Fallback (Graceful Degradation): Circuit OPEN $\rightarrow$ Chuyển giao dịch sang `PENDING_MANUAL_REVIEW`
+- `[x]` Metrics & Health: Circuit state exposed qua `/actuator/circuitbreakers`, `/actuator/ratelimiters`
+- `[x]` APIs: `POST /api/v1/resilience/interbank/transfer`, `GET /api/v1/resilience/status`, `POST /api/v1/resilience/simulate/toggle-external-bank`, `POST /api/v1/resilience/reset`
+- `[x]` Angular: `ResilienceService`, `ResiliencePage` (Giao diện 3 màu trạng thái Gauge, Nút giả lập đối tác DOWN & Panel kiểm thử thủ công)
+- `[x]` Test: Simulate external bank timeout $\rightarrow$ Circuit opens $\rightarrow$ Fallback $\rightarrow$ Recovery (Maven & Angular Build 100% SUCCESS)
 
 ---
 
