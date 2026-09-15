@@ -275,19 +275,22 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 12: Notification Module — Event-Driven
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Kafka Consumer, Idempotent Consumer, DLQ
 
 **Checklist:**
-- `[ ]` Kafka Consumer: Consume `transfer.completed` → Send push notification + email
-- `[ ]` Idempotent Consumer: Check processed event by `eventId` in Redis (TTL 1 hour)
-- `[ ]` Dead Letter Queue: Sau 3 retry fail → DLQ topic `notification.dlq`
-- `[ ]` Mock Email Sender (log to console)
-- `[ ]` Mock Push Notification (Firebase Cloud Messaging mock)
-- `[ ]` In-app notification: Lưu vào DB, hiển thị trong Notification Center
-- `[ ]` APIs: `GET /api/notifications?page=0&size=20`, `PATCH /api/notifications/{id}/read`
-- `[ ]` Angular: Notification center screen, badge unread count
+- `[x]` Kafka Consumer: Consume `transfer.completed` & `transfer.failed` $\rightarrow$ Tự động gửi push notification + email
+- `[x]` Idempotent Consumer: Kiểm tra `consumed_event:{id}` trong Redis (TTL 1 hour) loại bỏ message trùng
+- `[x]` Dead Letter Queue (DLQ): Tích hợp xử lý lỗi tập trung và chuyển bản tin lỗi tới `notification.dlq` khi cần
+- `[x]` `MockEmailSender`: Giả lập gửi Email cho khách hàng (an toàn mã hóa thông tin)
+- `[x]` `MockPushSender`: Giả lập gửi Push Notification qua Firebase Cloud Messaging (FCM Mock)
+- `[x]` In-app notification: Lưu vào CSDL Postgres bảng `notifications`, hiển thị trong Notification Center
+- `[x]` APIs: `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PATCH /api/v1/notifications/{id}/read`, `PATCH /api/v1/notifications/read-all`
+- `[x]` Angular: Màn hình Trung tâm Thông báo (Notification Center), Unread Badge Count trên Top Header & Navigation & Panel kiểm thử thủ công (Maven & Angular Build 100% SUCCESS)
+
+**Kỹ thuật phỏng vấn:** "Làm thế nào để xây dựng Idempotent Consumer trong kiến trúc Event-Driven Microservices chống trùng lặp dữ liệu khi Kafka bị Rebalance?"
+
 
 ---
 

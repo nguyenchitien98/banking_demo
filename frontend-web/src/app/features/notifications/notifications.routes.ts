@@ -1,3 +1,6 @@
-﻿import { Routes } from '@angular/router';
-export const NOTIFICATIONS_ROUTES: Routes = [];
+import { Routes } from '@angular/router';
+import { NotificationsPage } from './pages/notifications/notifications.page';
 
+export const NOTIFICATIONS_ROUTES: Routes = [
+  { path: '', component: NotificationsPage }
+];

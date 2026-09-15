@@ -154,15 +154,16 @@
 
 ---
 
-## 🔔 Sprint 12 — Notification Module
+## 🔔 Sprint 12 — Notification Module (Event-Driven)
 
-- `[ ]` Kafka Consumer: transfer.completed → Send push + email
-- `[ ]` Idempotent Consumer: check eventId Redis
-- `[ ]` DLQ: notification.dlq sau 3 retries
-- `[ ]` Mock Email + Push sender
-- `[ ]` In-app notifications DB
-- `[ ]` API: GET /notifications, PATCH /notifications/:id/read
-- `[ ]` Angular: Notification center + badge count
+- `[x]` Flyway V8: Bảng `notifications` lưu trữ thông báo In-App người dùng
+- `[x]` `NotificationKafkaListener`: `@KafkaListener` tiêu thụ các sự kiện từ Topic `transfer.completed` và `transfer.failed`
+- `[x]` **Idempotent Consumer Pattern**: Kiểm tra Redis key `consumed_event:{id}` (TTL 1 giờ) chống bắn thông báo trùng lặp khi rebalance/retry
+- `[x]` Multichannel Notification Sender: `MockEmailSender` (gửi mail định dạng) & `MockPushSender` (bắn FCM Mobile Push Notification)
+- `[x]` APIs: `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PATCH /api/v1/notifications/{id}/read`, `PATCH /api/v1/notifications/read-all`
+- `[x]` Angular: `NotificationService`, `NotificationsPage` (Trung tâm thông báo), Badge counter chưa đọc trên Top Header & Sidebar Navigation & Panel kiểm thử thủ công
+- `[x]` Test: Kafka transfer event $\rightarrow$ Redis idempotent check $\rightarrow$ In-App Notification DB $\rightarrow$ Email & Push log (Maven & Angular Build 100% SUCCESS)
+
 
 ---
 
