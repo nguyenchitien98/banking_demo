@@ -1,0 +1,340 @@
+<div class="qr-payments-container">
+  <!-- Dynamic Purple Header Banner -->
+  <div class="header-banner">
+    <div class="banner-content">
+      <div class="banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </div>
+      <div>
+        <h1>Thanh Toán & Sinh Mã VietQR Standard (EMVCo)</h1>
+        <p>Quét mã VietQR bất kỳ để chuyển tiền nhanh 24/7 hoặc tạo mã QR nhận tiền chuẩn ngân hàng</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <span>⚠️ {{ errorMessage }}</span>
+  </div>
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span>🎉 {{ successMessage }}</span>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-nav">
+    <button class="tab-btn" [class.active]="activeTab === 'scan'" (click)="activeTab = 'scan'">
+      📷 Quét / Tải mã VietQR
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'myqr'" (click)="activeTab = 'myqr'">
+      💳 Mã QR Nhận Tiền của Tôi
+    </button>
+  </div>
+
+  <!-- TAB 1: SCAN & PAY -->
+  <div *ngIf="activeTab === 'scan'" class="tab-content fade-in">
+    <!-- Presets for Testing -->
+    <div class="card preset-card">
+      <h3>🚀 Thử nghiệm nhanh với Mẫu VietQR (EMVCo Sample):</h3>
+      <div class="preset-buttons">
+        <button *ngFor="let sample of sampleQrs" (click)="useSampleQr(sample.payload)" class="btn-preset">
+          {{ sample.name }}
+        </button>
+      </div>
+    </div>
+
+    <div class="two-column-layout">
+      <!-- Input Column -->
+      <div class="card input-card">
+        <h3>1. Nhập hoặc Dán chuỗi VietQR Raw Data</h3>
+        
+        <div class="form-group">
+          <label>Mã VietQR EMVCo (TLVs):</label>
+          <textarea 
+            rows="4" 
+            [(ngModel)]="rawQrInput" 
+            (ngModelChange)="parseQrString($event)"
+            placeholder="Dán chuỗi VietQR chuẩn EMVCo tại đây (Ví dụ: 0002010102123854...)"
+            class="code-textarea">
+          </textarea>
+        </div>
+
+        <div class="or-divider"><span>HOẶC TẢI ẢNH MÃ QR</span></div>
+
+        <div class="dropzone" (click)="fileInput.click()">
+          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" style="display: none">
+          <div class="dropzone-text">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Nhấp để chọn ảnh QR Code từ thiết bị</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parsed Info Column -->
+      <div class="card result-card">
+        <h3>2. Kết Quả Giải Mã VietQR (Decoded Info)</h3>
+
+        <div *ngIf="!parsedQr" class="empty-result">
+          <p>Chưa có dữ liệu. Vui lòng nhập mã VietQR hoặc chọn một mẫu thử nghiệm bên trái.</p>
+        </div>
+
+        <div *ngIf="parsedQr" class="parsed-details">
+          <div class="badge-row">
+            <span class="badge" [class.badge-success]="parsedQr.crcValid" [class.badge-danger]="!parsedQr.crcValid">
+              {{ parsedQr.crcValid ? '✓ CRC-16 Checksum Hợp Lệ' : '❌ CRC Checksum Lỗi' }}
+            </span>
+            <span class="badge badge-info">
+              {{ parsedQr.isDynamic ? 'Mã QR Động (Đã có số tiền)' : 'Mã QR Tĩnh (Nhập số tiền)' }}
+            </span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Ngân Hàng Thụ Hưởng:</span>
+            <span class="value bank-highlight">{{ parsedQr.bankName }} (BIN: {{ parsedQr.bankBin }})</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Số Tài Khoản Nhận:</span>
+            <span class="value acc-number">{{ parsedQr.accountNumber }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="label">Tên Chủ Tài Khoản:</span>
+            <span class="value holder-name">{{ parsedQr.accountHolderName || 'TÀI KHOẢN THỤ HƯỞNG' }}</span>
+          </div>
+
+          <div class="form-group margin-top-15">
+            <label>Số tiền chuyển (VND):</label>
+            <input 
+              type="number" 
+              [(ngModel)]="customAmount" 
+              [readonly]="parsedQr.isDynamic && parsedQr.amount !== null" 
+              placeholder="Nhập số tiền cần chuyển"
+              class="amount-input">
+          </div>
+
+          <div class="form-group">
+            <label>Nội dung thanh toán:</label>
+            <input type="text" [(ngModel)]="customDescription" placeholder="Nhập nội dung chuyển tiền" class="text-input">
+          </div>
+
+          <div class="form-group">
+            <label>Tài khoản thanh toán:</label>
+            <select [(ngModel)]="selectedSourceAccountId" class="select-input">
+              <option *ngFor="let acc of accounts" [value]="acc.id">
+                {{ acc.accountNumber }} - {{ acc.balance | number:'1.0-0' }} VND
+              </option>
+            </select>
+          </div>
+
+          <button (click)="openPaymentConfirm()" [disabled]="loading || !parsedQr.crcValid" class="btn-primary full-width">
+            <span>⚡ Xác Nhận Thanh Toán VietQR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: MY RECEIVING QR -->
+  <div *ngIf="activeTab === 'myqr'" class="tab-content fade-in">
+    <div class="two-column-layout">
+      <!-- Config Generator Card -->
+      <div class="card config-card">
+        <h3>⚙️ Tùy Chỉnh Mã VietQR Nhận Tiền</h3>
+
+        <div class="form-group">
+          <label>Chọn Tài Khoản Nhận Tiền:</label>
+          <select [(ngModel)]="selectedReceiveAccount" (change)="generateMyQrCode()" class="select-input">
+            <option *ngFor="let acc of accounts" [value]="acc.accountNumber">
+              STK: {{ acc.accountNumber }} (Số dư: {{ acc.balance | number:'1.0-0' }} VND)
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Số Tiền Muốn Nhận (Để trống nếu tạo QR Tĩnh):</label>
+          <input type="number" [(ngModel)]="genAmount" (ngModelChange)="generateMyQrCode()" placeholder="Ví dụ: 100000" class="amount-input">
+        </div>
+
+        <div class="form-group">
+          <label>Nội Dung Nhận Tiền Gợi Ý:</label>
+          <input type="text" [(ngModel)]="genDescription" (ngModelChange)="generateMyQrCode()" placeholder="Ví dụ: Chuyen tien cafe" class="text-input">
+        </div>
+
+        <div class="info-box">
+          💡 <strong>Mẹo:</strong> Điền số tiền để tự động tạo mã <em>VietQR Động</em>. Khách hàng chỉ cần quét mã là số tiền và nội dung sẽ tự động điền sẵn!
+        </div>
+      </div>
+
+      <!-- My QR Display Card -->
+      <div class="card qr-display-card text-center">
+        <h3>💳 Thẻ VietQR BankX</h3>
+        
+        <div class="vietqr-card" *ngIf="generatedQr">
+          <div class="card-header">
+            <span class="bank-logo">BankX</span>
+            <span class="napas-badge">Napas 247</span>
+          </div>
+
+          <!-- Simulated Dynamic QR Box -->
+          <div class="qr-box">
+            <div class="qr-pattern">
+              <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="#5d2595" stroke-width="1.5">
+                <rect x="2" y="2" width="8" height="8" rx="1"></rect>
+                <rect x="14" y="2" width="8" height="8" rx="1"></rect>
+                <rect x="2" y="14" width="8" height="8" rx="1"></rect>
+                <rect x="4" y="4" width="4" height="4" fill="#5d2595"></rect>
+                <rect x="16" y="4" width="4" height="4" fill="#5d2595"></rect>
+                <rect x="4" y="16" width="4" height="4" fill="#5d2595"></rect>
+                <path d="M14 14h2v2h-2zM18 14h4v2h-4zM14 18h4v2h-4zM20 18h2v4h-2z"></path>
+              </svg>
+            </div>
+            <div class="qr-center-logo">BankX</div>
+          </div>
+
+          <div class="acc-details">
+            <h4 class="holder-title">{{ generatedQr.accountHolderName || 'CHỦ TÀI KHOẢN BANKX' }}</h4>
+            <p class="acc-num-display">STK: {{ generatedQr.accountNumber }}</p>
+            <p *ngIf="generatedQr.amount" class="amount-display">{{ generatedQr.amount | number:'1.0-0' }} VND</p>
+            <p *ngIf="generatedQr.description" class="desc-display">"{{ generatedQr.description }}"</p>
+          </div>
+
+          <div class="payload-box">
+            <label>Chuỗi Payload VietQR EMVCo:</label>
+            <div class="code-box">{{ generatedQr.qrPayload }}</div>
+          </div>
+
+          <button (click)="copyQrPayload()" class="btn-secondary full-width margin-top-15">
+            <span>{{ qrPayloadCopied ? '✓ Đã Sao Chép Chuỗi VietQR' : '📋 Sao Chép Chuỗi Payload' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT CONFIRM MODAL -->
+  <div *ngIf="showConfirmModal && parsedQr" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚡ Xác Nhận Thanh Toán VietQR</h3>
+        <button (click)="showConfirmModal = false" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="summary-box">
+          <div class="summary-item">
+            <span>Tài khoản trích tiền:</span>
+            <strong>{{ selectedSourceAccountId }}</strong>
+          </div>
+          <div class="summary-item">
+            <span>Ngân hàng nhận:</span>
+            <strong>{{ parsedQr.bankName }}</strong>
+          </div>
+          <div class="summary-item">
+            <span>Tài khoản nhận:</span>
+            <strong>{{ parsedQr.accountNumber }}</strong>
+          </div>
+          <div class="summary-item">
+            <span>Tên người nhận:</span>
+            <strong>{{ parsedQr.accountHolderName || 'TÀI KHOẢN THỤ HƯỞNG' }}</strong>
+          </div>
+          <div class="summary-item highlight-amount">
+            <span>Số tiền thanh toán:</span>
+            <strong class="amount-text">{{ (parsedQr.amount || customAmount) | number:'1.0-0' }} VND</strong>
+          </div>
+          <div class="summary-item">
+            <span>Nội dung:</span>
+            <span>{{ customDescription }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="showConfirmModal = false" class="btn-cancel">Hủy</button>
+        <button (click)="confirmPayment()" [disabled]="loading" class="btn-primary">
+          <span *ngIf="!loading">Đồng Ý Thanh Toán</span>
+          <span *ngIf="loading">Đang Xử Lý...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIPT MODAL -->
+  <div *ngIf="paymentResult" class="modal-backdrop">
+    <div class="modal-card receipt-card">
+      <div class="receipt-header">
+        <div class="success-icon">✓</div>
+        <h3>Giao Dịch VietQR Thành Công!</h3>
+        <p class="receipt-amount">{{ paymentResult.amount | number:'1.0-0' }} VND</p>
+      </div>
+      <div class="receipt-body">
+        <div class="receipt-row">
+          <span>Mã giao dịch:</span>
+          <strong>{{ paymentResult.paymentId }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Tài khoản nhận:</span>
+          <strong>{{ paymentResult.targetAccountNumber }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Ngân hàng:</span>
+          <strong>BIN: {{ paymentResult.targetBankBin }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Trạng thái:</span>
+          <span class="status-completed">{{ paymentResult.status }}</span>
+        </div>
+        <div class="receipt-row">
+          <span>Thời gian:</span>
+          <span>{{ paymentResult.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button (click)="paymentResult = null" class="btn-primary full-width">Hoàn Tất</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANDATORY VERIFICATION GUIDE PANEL (RULE[AGENTS.md]) -->
+  <div class="card verification-panel margin-top-30">
+    <div class="panel-header">
+      <span class="icon">🧪</span>
+      <h3>Hướng Dẫn Kiểm Thử Thủ Công — Sprint 14: VietQR Standard & EMVCo Parsing</h3>
+    </div>
+    <div class="panel-body">
+      <p>Khu vực này hỗ trợ các kỹ sư kiểm thử xác minh tính năng quét, phân tích và khởi tạo VietQR chuẩn EMVCo:</p>
+      
+      <div class="test-scenarios">
+        <div class="scenario-item">
+          <strong>Kịch bản 1: Phân tích VietQR Động (Dynamic QR - Đã có số tiền 50.000đ)</strong>
+          <ul>
+            <li>Bấm nút mẫu <strong>"⚡ QR 1: TPBank 50.000đ"</strong> bên trên.</li>
+            <li><strong>Kỳ vọng:</strong> Hệ thống giải mã Tag 38 (TPBank BIN 970423), Tag 54 (50,000 VND), Tag 63 (CRC-16 Hợp lệ). Nút xác nhận thanh toán khả dụng.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 2: Phân tích VietQR Tĩnh (Static QR - Chưa có số tiền)</strong>
+          <ul>
+            <li>Bấm nút mẫu <strong>"🏷️ QR 3: BankX Tĩnh"</strong>.</li>
+            <li><strong>Kỳ vọng:</strong> Trường số tiền được mở khóa cho phép người dùng tự nhập số tiền tùy ý.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-item">
+          <strong>Kịch bản 3: Sinh Mã VietQR Nhận Tiền Cá Nhân (EMVCo Generator)</strong>
+          <ul>
+            <li>Chuyển sang tab <strong>"💳 Mã QR Nhận Tiền của Tôi"</strong>, điền số tiền <code>100000</code> và nội dung <code>Tra tien cafe</code>.</li>
+            <li><strong>Kỳ vọng:</strong> Chuỗi VietQR Payload bên dưới tự động được xây dựng lại, đính kèm Tag 54=100000, Tag 62 Sub-tag 08="Tra tien cafe" và tính lại Checksum CRC-16 chuẩn xác.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

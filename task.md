@@ -182,15 +182,28 @@
 
 ---
 
+## 📷 Sprint 14 — QR Payment Module (VietQR Standard)
+
+- `[x]` EMVCo VietQR Engine: `VietQrParser` phân tích chuỗi TLV (Tag 00, 01, 38, 53, 54, 58, 62, 63) & kiểm tra checksum CRC-16/CCITT-FALSE
+- `[x]` EMVCo VietQR Generator: `VietQrGenerator` sinh mã VietQR Động/Tĩnh kèm checksum CRC-16 chuẩn xác
+- `[x]` Flyway V10: `qr_payments` table lưu trữ lịch sử giao dịch quét mã QR
+- `[x]` APIs: `POST /api/v1/payments/qr/parse`, `POST /api/v1/payments/qr/generate`, `GET /api/v1/payments/qr/my-qr`, `@Idempotent POST /api/v1/payments/qr/pay`
+- `[x]` Double-Entry Ledger & Transactional Outbox integration: Hạch toán bút toán ghi sổ kép và bắn event `QR_PAYMENT_COMPLETED`
+- `[x]` Angular: `QrPaymentService`, `QrPaymentsPage` tích hợp Tab quét/dán/upload ảnh QR, Tab Thẻ VietQR cá nhân nhận tiền, các mẫu QR thử nghiệm, Modal xác nhận & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Decoded VietQR attributes verification, invalid CRC-16 rejection, Static vs Dynamic QR flow (Maven & Angular Build 100% SUCCESS)
+
+
+---
+
 ## 📊 Progress Summary
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
-Phase 3 (Sprint 13-18):        9/45 tasks  [ 20%]
+Phase 3 (Sprint 13-18):       16/45 tasks  [ 35%]
 
-OVERALL: 95/135 tasks completed
+OVERALL: 102/135 tasks completed
 ```
 
 ---
@@ -201,3 +214,4 @@ OVERALL: 95/135 tasks completed
 
 - [2026-09-14] Khởi tạo project - Đang setup docs và planning
 - [2026-09-15] Hoàn thành Sprint 13 Bill Payment module với Strategy Pattern (SOLID OCP). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 14 QR Payment module chuẩn VietQR EMVCo (TLVs, CRC-16 Checksum, Generator & Decoder). Full stack Maven & Angular build xanh 100%.

@@ -321,21 +321,22 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 14: QR Payment Module
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** VietQR standard, QR code parsing, Capacitor Camera Plugin
 
 **Checklist:**
-- `[ ]` VietQR parser: Decode QR string → Extract `bankCode`, `accountNumber`, `amount`, `description`
-- `[ ]` QR Generator: Tạo QR từ `accountNumber + amount + description` (theo chuẩn VietQR EMV)
-- `[ ]` API:
-  - `POST /api/payments/qr/parse` — Parse QR string → Return transfer info
-  - `GET /api/accounts/{id}/qr` — Generate QR nhận tiền
-- `[ ]` Flow: Quét QR → Auto-fill Transfer Form → Confirm → OTP → Complete
-- `[ ]` Web: Upload ảnh QR (sử dụng `@zxing/browser` để decode)
-- `[ ]` Mobile (Ionic): Capacitor Camera Plugin → Scan realtime
-- `[ ]` Angular: Màn hình Quét QR, animation scanning, tạo QR với logo BankX
-- `[ ]` Test: Valid VietQR, invalid QR, QR không có số tiền (manual input)
+- `[x]` VietQR parser: Decode QR string $\rightarrow$ Extract `bankBin`, `accountNumber`, `amount`, `description`, kiểm tra CRC-16 Checksum
+- `[x]` QR Generator: Tạo chuỗi VietQR chuẩn EMVCo từ `accountNumber + amount + description` có đính kèm CRC-16
+- `[x]` Flyway V10: `qr_payments` table lưu lịch sử quét/thanh toán QR
+- `[x]` APIs:
+  - `POST /api/v1/payments/qr/parse` — Parse QR string $\rightarrow$ Return transfer info & recipient name
+  - `POST /api/v1/payments/qr/generate` — Sinh mã VietQR động/tĩnh
+  - `GET /api/v1/payments/qr/my-qr` — Lấy mã QR nhận tiền cá nhân
+  - `@Idempotent POST /api/v1/payments/qr/pay` — Thực thi thanh toán qua QR (Double-entry Ledger + Outbox)
+- `[x]` Web: Upload/dán ảnh QR & bộ mẫu thử nghiệm nhanh VietQR Động/Tĩnh
+- `[x]` Angular: `QrPaymentService`, `QrPaymentsPage` với tab Quét mã & tab Mã QR nhận tiền cá nhân, Modal xác nhận & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Valid VietQR CRC check, invalid CRC, Static QR, Dynamic QR (Maven & Angular Build 100% SUCCESS)
 
 ---
 

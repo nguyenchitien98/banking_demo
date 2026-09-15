@@ -89,11 +89,21 @@
           <span>Thông báo</span>
         </a>
 
-        <a routerLink="/payments" routerLinkActive="active" class="nav-item">
+        <a routerLink="/payments" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
           </svg>
-          <span>Thanh toán</span>
+          <span>Thanh toán hoá đơn</span>
+        </a>
+
+        <a routerLink="/payments/qr" routerLinkActive="active" class="nav-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Quét mã VietQR</span>
         </a>
 
         <a routerLink="/cards" routerLinkActive="active" class="nav-item">
