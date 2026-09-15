@@ -57,22 +57,22 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ## 💡 Phase 1: Auth & Account Core (Sprint 01–05)
 
 ### Sprint 01: API Gateway & Project Structure
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Spring Cloud Gateway, Route configuration, Filter Chain
 
 **Checklist:**
-- `[ ]` API Gateway với Spring Cloud Gateway
-- `[ ]` Routes: `/api/auth/**`, `/api/customers/**`, `/api/accounts/**`, `/api/transfers/**`
-- `[ ]` Global filter: Request logging, Correlation ID (X-Trace-Id)
-- `[ ]` CORS configuration (cho phép Angular dev server)
-- `[ ]` Health check endpoint: `/actuator/health`
-- `[ ]` Clean Architecture package structure cho banking-core module
-- `[ ]` `ApiResponse<T>` và `ApiErrorResponse` wrapper records
-- `[ ]` `GlobalExceptionHandler` với `@RestControllerAdvice`
-- `[ ]` Flyway V1 migration: Tạo bảng cơ sở
+- `[x]` API Gateway với Spring Cloud Gateway (`bankx-api-gateway`, port 8080)
+- `[x]` Routes: `/api/v1/auth/**`, `/api/v1/customers/**`, `/api/v1/accounts/**`, `/api/v1/transfers/**`
+- `[x]` Global filter: Request logging, Correlation ID (`X-Trace-Id`)
+- `[x]` CORS configuration (cho phép Angular dev server `http://localhost:4200`)
+- `[x]` Health check endpoint: `/api/v1/health`
+- `[x]` Clean Architecture package structure cho banking-core module
+- `[x]` `ApiResponse<T>` và `ApiErrorResponse` wrapper records trong `bankx-common`
+- `[x]` `GlobalExceptionHandler` với `@RestControllerAdvice` trong `bankx-common`
+- `[x]` Flyway V1 migration: Tạo bảng cơ sở (`V1__init_schema.sql`)
 
-**Kết quả bàn giao:** Gateway nhận request, forward đúng service.
+**Kết quả bàn giao:** Gateway nhận request, forward đúng service, compile 100% clean.
 
 ---
 

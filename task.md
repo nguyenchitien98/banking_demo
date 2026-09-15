@@ -15,16 +15,16 @@
 
 ---
 
-## 🔐 Sprint 01 — API Gateway
+## 🔐 Sprint 01 — API Gateway & Base Framework Setup
 
-- `[ ]` Spring Cloud Gateway setup
-- `[ ]` Route config: auth, accounts, transfers, payments
-- `[ ]` Correlation ID filter (X-Trace-Id)
-- `[ ]` CORS config
-- `[ ]` `ApiResponse<T>` và `ApiErrorResponse` records
-- `[ ]` `GlobalExceptionHandler` với @RestControllerAdvice
-- `[ ]` Health check endpoint
-- `[ ]` Flyway V1 migration file
+- `[x]` Spring Cloud Gateway setup (`bankx-api-gateway`, port 8080)
+- `[x]` Route config: auth, customers, accounts, transfers, payments, cards, notifications
+- `[x]` Correlation ID filter (`X-Trace-Id` Global Filter)
+- `[x]` CORS config (`CorsWebFilter` hỗ trợ Angular port 4200)
+- `[x]` `ApiResponse<T>` và `ApiErrorResponse` Java Records trong `bankx-common`
+- `[x]` `GlobalExceptionHandler` với `@RestControllerAdvice` trong `bankx-common`
+- `[x]` Health check endpoint (`GET /api/v1/health`)
+- `[x]` Flyway V1 migration file (`V1__init_schema.sql`: users, user_roles, customers, bank_accounts, outbox_events)
 
 ---
 
@@ -162,11 +162,11 @@
 
 ```
 Phase 0 (Sprint 00):          6/6   tasks  [100%]
-Phase 1 (Sprint 01-05):       0/35  tasks  [  0%]
+Phase 1 (Sprint 01-05):       8/35  tasks  [ 23%]
 Phase 2 (Sprint 06-12):       0/49  tasks  [  0%]
 Phase 3+ (Sprint 13-30):      Not broken down yet
 
-OVERALL: 6/90 tasks completed
+OVERALL: 14/90 tasks completed
 ```
 
 ---

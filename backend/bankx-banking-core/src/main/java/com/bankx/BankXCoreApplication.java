@@ -31,7 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @since Sprint 00
  */
 @SpringBootApplication
-@EnableJpaAuditing(auditorAwareRef = "securityAuditorAware")
+@EnableJpaAuditing
 @EnableKafka
 @EnableScheduling
 public class BankXCoreApplication {

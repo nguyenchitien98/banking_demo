@@ -24,6 +24,24 @@
     <description>Shared utilities, DTOs, Exceptions dùng chung trong BankX</description>
 
     <dependencies>
+        <!-- Spring Web — Cung cấp HttpStatus, ResponseEntity, @RestControllerAdvice -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+
+        <!-- Spring Context — Validation classes (BindException, FieldError) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <!-- SLF4J API — Logging facade -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
         <!-- Jackson — Serialize/Deserialize JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
