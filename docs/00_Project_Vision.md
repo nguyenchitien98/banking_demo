@@ -1,4 +1,4 @@
-﻿# BankX Digital Banking Platform — Tầm Nhìn Dự Án (Project Vision)
+# BankX Digital Banking Platform — Tầm Nhìn Dự Án (Project Vision)
 
 Tài liệu này xác định tầm nhìn, phạm vi nghiệp vụ, mục tiêu kỹ thuật và các ràng buộc cốt lõi của **BankX Digital Banking Platform** — dự án ngân hàng số mô phỏng TPBank, được xây dựng để phục vụ mục tiêu học tập, luyện tập phỏng vấn Java Senior và khám phá kiến trúc enterprise banking.
 
@@ -51,8 +51,8 @@ Tài liệu này xác định tầm nhìn, phạm vi nghiệp vụ, mục tiêu 
 
 ### ✅ Nằm trong phạm vi (In-Scope)
 
-#### Khách hàng (Customer Portal — Angular Web + Ionic Mobile):
-1. **Authentication:** Đăng nhập username/password, OTP, Face ID (Capacitor Plugin), Biometric
+#### Khách hàng (Customer Portal — Angular Web):
+1. **Authentication:** Đăng nhập username/password, OTP, Biometric authentication
 2. **Dashboard:** Số dư, giao dịch gần đây, shortcuts nhanh
 3. **Tài khoản (Account):** Danh sách tài khoản, sao kê, mở tài khoản mới
 4. **Chuyển tiền (Transfer):** Nội bộ ngân hàng, liên ngân hàng, xác nhận OTP

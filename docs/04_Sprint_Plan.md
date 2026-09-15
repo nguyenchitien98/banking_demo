@@ -576,64 +576,9 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 
 ---
 
-## 📱 Phase 5: Mobile & Production (Sprint 25–30)
+## 🚀 Phase 5: Production Readiness & Hardening (Sprint 25–27)
 
-### Sprint 25: Ionic + Capacitor Setup
-**Trạng thái:** `[ ]`
-
-**Kỹ thuật học:** Ionic Framework, Capacitor, Cross-platform deployment
-
-**Checklist:**
-- `[ ]` Tạo `banking/frontend-mobile/` — Ionic + Angular (reuse code từ `frontend-web`)
-- `[ ]` Shared library: Tách models, API services, pipes vào `banking/packages/shared/`
-- `[ ]` Capacitor setup: `npx cap init`, add iOS + Android platforms
-- `[ ]` Capacitor Plugins cài đặt:
-  - `@capacitor/camera` — Cho QR scanner
-  - `@capacitor/biometrics` — Face ID / Touch ID
-  - `@capacitor/secure-storage` — Lưu token an toàn
-  - `@capacitor/push-notifications` — Firebase Push
-  - `@capacitor/haptics` — Rung khi transfer success
-- `[ ]` Mobile layout: Bottom Navigation, Safe area insets (iPhone notch)
-- `[ ]` Build test: `ionic build` + `npx cap sync` chạy được trên Android Emulator
-- `[ ]` TPBank mobile UI: Implement theo `docs/07_UI_UX_Standard.md`
-
----
-
-### Sprint 26: Mobile — Auth + Biometric Login
-**Trạng thái:** `[ ]`
-
-**Kỹ thuật học:** Biometric authentication, Secure Storage, Mobile-specific UX
-
-**Checklist:**
-- `[ ]` Login screen mobile: Phone + Password, Face ID button, OTP flow
-- `[ ]` Biometric Setup flow:
-  - Lần đầu login → Hỏi "Bật Face ID?" → Lưu encrypted token vào Secure Storage
-  - Các lần sau → Chạm vào Face ID icon → Biometric verify → Load token → Refresh API
-- `[ ]` Fallback: Biometric fail 3 lần → Chuyển về PIN/Password
-- `[ ]` Secure Storage: KHÔNG dùng localStorage trên mobile — dùng Capacitor Secure Storage
-- `[ ]` Deep link: `bankx://auth/otp?session=xxx` — Mở app từ SMS link
-- `[ ]` Test trên device thực (Android): Biometric success, biometric fail, fallback
-
----
-
-### Sprint 27: Mobile — Transfer + QR Scanner
-**Trạng thái:** `[ ]`
-
-**Kỹ thuật học:** Camera permission, Real-time QR decode, Mobile transfer UX
-
-**Checklist:**
-- `[ ]` Transfer flow mobile: 4 screens (Form → Confirm → OTP → Result) với mobile UX
-- `[ ]` Gesture: Swipe down để dismiss OTP screen, pull-to-refresh history
-- `[ ]` QR Scanner: Capacitor Camera → Live preview → `@zxing/browser` decode realtime
-- `[ ]` Haptic feedback: Rung nhẹ khi QR scan thành công, mạnh hơn khi transfer thành công
-- `[ ]` Push Notification: Firebase setup, nhận notification khi có GD mới
-  - Click notification → Deep link → Mở màn hình transaction detail
-- `[ ]` Background refresh: Khi app từ background về foreground → Auto refresh balance
-- `[ ]` Test: QR scan trên device thực, push notification nhận được, haptics
-
----
-
-### Sprint 28: Load Testing & Performance Tuning
+### Sprint 25: Load Testing & Performance Tuning
 **Trạng thái:** `[ ]`
 
 **Kỹ thuật học:** k6 load testing, Bottleneck analysis, JVM + DB tuning
@@ -657,7 +602,7 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 
 ---
 
-### Sprint 29: CI/CD Pipeline
+### Sprint 26: CI/CD Pipeline & Quality Gates
 **Trạng thái:** `[ ]`
 
 **Kỹ thuật học:** GitHub Actions, Docker multi-stage build, Automated quality gates
@@ -680,7 +625,7 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 
 ---
 
-### Sprint 30: Production Hardening & Final Documentation
+### Sprint 27: Production Hardening & Final Documentation
 **Trạng thái:** `[ ]`
 
 **Kỹ thuật học:** Security hardening, OpenAPI docs, Interview preparation
@@ -713,10 +658,10 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ## 📊 Sprint Tracking Dashboard
 
 ```
-Tổng Sprint: 30 (không kể Sprint 00)
-Hoàn thành:   0 / 30  [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
+Tổng Sprint: 27 (không kể Sprint 00)
+Hoàn thành:  21 / 27  [█████████████████████░░░░░░] 78%
 Đang làm:     0
-Chưa làm:    30
+Chưa làm:     6
 ```
 
 > **Cập nhật dashboard sau mỗi Sprint hoàn thành!**

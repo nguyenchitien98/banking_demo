@@ -60,7 +60,6 @@ Tách các service có traffic/load khác biệt hoặc team khác nhau:
 graph TD
     subgraph "Client Layer"
         WebApp[Angular Web Banking]
-        MobileApp[Ionic/Capacitor Mobile]
         AdminPortal[Angular Admin Portal]
     end
 
