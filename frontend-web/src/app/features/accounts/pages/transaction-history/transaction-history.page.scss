@@ -1,0 +1,46 @@
+.cqrs-history-container {
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: 100vh;
+
+  .bg-purple {
+    background-color: #8b5cf6 !important;
+    color: #ffffff;
+  }
+
+  .verification-guide-card {
+    border-radius: 0.75rem;
+    overflow: hidden;
+
+    .guide-step-box {
+      background: #ffffff;
+      border-color: #e2e8f0 !important;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #3b82f6 !important;
+        transform: translateY(-2px);
+      }
+
+      .step-num {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+      }
+
+      .step-title {
+        font-size: 0.95rem;
+      }
+
+      .step-desc {
+        font-size: 0.825rem;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .cqrs-info-card {
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+  }
+}
