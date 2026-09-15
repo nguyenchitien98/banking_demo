@@ -1,0 +1,178 @@
+<div class="saga-container">
+  <!-- Page Title Header -->
+  <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-dark mb-1">
+        <i class="bi bi-diagram-2-fill text-primary me-2"></i> Saga Orchestration & Bút Toán Đảo (Compensating Transactions)
+      </h2>
+      <p class="text-muted small mb-0">Quản lý luồng giao dịch phân tán qua State Machine và tự động khôi phục số dư (Rollback) khi sự cố phát sinh</p>
+    </div>
+    <div class="header-badges">
+      <span class="badge bg-purple p-2 me-2"><i class="bi bi-cpu me-1"></i> Saga Orchestrator</span>
+      <span class="badge bg-success p-2"><i class="bi bi-arrow-counterclockwise me-1"></i> Compensating Enabled</span>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i> {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ errorMessage }}
+  </div>
+
+  <!-- VERIFICATION GUIDE PANEL (Mandatory RULE[AGENTS.md]) -->
+  <div class="card verification-guide-card mb-4 shadow-sm border-0">
+    <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+      <span class="fw-bold"><i class="bi bi-journal-check me-2 text-warning"></i> Hướng Dẫn Kiểm Thử Thủ Công (Verification Guide Panel)</span>
+      <span class="badge bg-warning text-dark fw-bold">Sprint 22 Rule</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div *ngFor="let step of guideSteps; let i = index" class="col-md-3">
+          <div class="guide-step-box p-3 h-100 rounded border">
+            <div class="step-num text-primary fw-bold mb-1">0{{ i + 1 }}</div>
+            <div class="step-title fw-bold text-dark mb-1">{{ step.title }}</div>
+            <div class="step-desc text-muted small">{{ step.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form & Controls Grid -->
+  <div class="row g-4 mb-4">
+    <!-- Simulation Control Form -->
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-bold">
+          <i class="bi bi-sliders me-2 text-primary"></i> Khởi Chạy Saga & Giả Lập Kịch Bản Lỗi
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Số tài khoản nguồn (DEBIT):</label>
+            <input type="text" class="form-control" [(ngModel)]="request.sourceAccountNumber" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Số tài khoản đích (CREDIT):</label>
+            <input type="text" class="form-control" [(ngModel)]="request.targetAccountNumber" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Số tiền chuyển (VND):</label>
+            <input type="number" class="form-control" [(ngModel)]="request.amount" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-danger">Kịch bản Giả lập Lỗi (Simulation Mode):</label>
+            <select class="form-select border-danger" [(ngModel)]="request.forceFailureStep">
+              <option value="NONE">✅ Thành công 100% (Happy Path - NONE)</option>
+              <option value="CREDIT_FAILED">⚠️ Giả lập Lỗi Credit InterBank (Kick-off REVERSE_DEBIT)</option>
+              <option value="LEDGER_FAILED">⚠️ Giả lập Lỗi Hạch Toán Ledger (Kick-off Full Compensation)</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary w-100 fw-bold py-2 mt-2" (click)="executeSaga()" [disabled]="executing">
+            <span *ngIf="!executing"><i class="bi bi-play-circle-fill me-1"></i> Khởi Chạy Saga Orchestrator</span>
+            <span *ngIf="executing" class="spinner-border spinner-border-sm me-1"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active State Machine Visualizer -->
+    <div class="col-md-7">
+      <div class="card border-0 shadow-sm h-100" *ngIf="activeSaga">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-diagram-3 me-2 text-warning"></i> Saga State Machine Visualizer</span>
+          <span class="badge" [ngClass]="{
+            'bg-success': activeSaga.currentState === 'COMPLETED',
+            'bg-warning text-dark': activeSaga.currentState.includes('COMPENSATED'),
+            'bg-danger': activeSaga.currentState === 'FAILED'
+          }">{{ activeSaga.currentState }}</span>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <span class="small text-muted">Mã Saga:</span> <code>{{ activeSaga.sagaId }}</code> | 
+            <span class="small text-muted ms-2">Mã GD:</span> <strong>{{ activeSaga.transferCode }}</strong>
+          </div>
+
+          <!-- Failure Alert Callout if Compensated -->
+          <div *ngIf="activeSaga.failureReason" class="alert alert-warning small p-2 mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Compensating Triggered:</strong> {{ activeSaga.failureReason }}
+          </div>
+
+          <!-- Audit Steps Table -->
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Bước Audit</th>
+                  <th>Chuyển Trạng Thái</th>
+                  <th>Loại Bước</th>
+                  <th>Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of activeSaga.steps">
+                  <td class="fw-bold">{{ s.stepName }}</td>
+                  <td class="small">
+                    <code>{{ s.stateBefore }}</code> &rarr; <code>{{ s.stateAfter }}</code>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-danger': s.compensating,
+                      'bg-info text-dark': !s.compensating
+                    }">{{ s.compensating ? 'Bút Toán Đảo' : 'Forward Step' }}</span>
+                  </td>
+                  <td class="small text-muted">{{ s.details }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Saga Instances List -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold">
+      <i class="bi bi-clock-history me-2 text-secondary"></i> Lịch Sử Các Saga Instances Đã Thực Thi
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Mã Saga</th>
+              <th>Mã Chuyển Tiền</th>
+              <th>STK Nguồn &rarr; Đích</th>
+              <th>Số Tiền (VND)</th>
+              <th>Trạng Thái State Machine</th>
+              <th>Thời Gian</th>
+              <th class="text-end">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let saga of sagasList" [class.table-active]="activeSaga?.sagaId === saga.sagaId">
+              <td><code>{{ saga.sagaId }}</code></td>
+              <td class="fw-bold text-dark">{{ saga.transferCode }}</td>
+              <td class="small">{{ saga.sourceAccountNumber }} &rarr; {{ saga.targetAccountNumber }}</td>
+              <td class="fw-bold text-primary">{{ saga.amount | number }} đ</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': saga.currentState === 'COMPLETED',
+                  'bg-warning text-dark': saga.currentState.includes('COMPENSATED'),
+                  'bg-danger': saga.currentState === 'FAILED'
+                }">{{ saga.currentState }}</span>
+              </td>
+              <td class="small text-muted">{{ saga.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" (click)="selectSaga(saga)">Xem Trạng Thái</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

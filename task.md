@@ -233,13 +233,15 @@
 
 ---
 
-## 🔍 Sprint 21 — Distributed Tracing (OpenTelemetry & Jaeger)
+## 🔄 Sprint 22 — Saga Orchestration (Distributed Transfer & Compensating Transactions)
 
-- `[x]` OpenTelemetry & Micrometer Tracing Integration: `micrometer-tracing-bridge-otel`, `opentelemetry-exporter-otlp` với chuẩn W3C Header `traceparent` (`00-{traceId}-{spanId}-01`)
-- `[x]` Custom Business Spans & MDC Service: `TraceService` tự động khởi tạo/đóng các Spans `transfer.validate`, `fraud.evaluate`, `transfer.debit`, `transfer.credit`, `transfer.ledger` & tiêm `traceId`/`spanId` vào SLF4J MDC
-- `[x]` Tracing REST Controller: `TracingController` (`GET /api/v1/tracing/current`, `POST /api/v1/tracing/simulate-span-tree`)
-- `[x]` Angular: `TracingService`, `TracingPage` giao diện trực quan hóa cây vết vết Jaeger Waterfall Tree (Gateway $\rightarrow$ Core $\rightarrow$ Outbox $\rightarrow$ Kafka $\rightarrow$ Notification), thẻ W3C traceparent, MDC correlation & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
-- `[x]` Test: W3C header propagation, MDC log enrichment, end-to-end span tree visualization (Maven & Angular Build 100% SUCCESS)
+- `[x]` Flyway V16: `saga_instances` & `saga_audit_steps` tables (State Machine persistence)
+- `[x]` Saga JPA Domain & Repositories: `SagaInstanceJpaEntity`, `SagaAuditStepJpaEntity`, `SpringDataSagaInstanceRepository`, `SpringDataSagaAuditStepRepository`
+- `[x]` Saga Orchestrator Application Service: `TransferSagaOrchestrator` điều phối chuỗi trạng thái (`STARTED` $\rightarrow$ `DEBIT_COMPLETED` $\rightarrow$ `CREDIT_COMPLETED` $\rightarrow$ `LEDGER_RECORDED` $\rightarrow$ `COMPLETED`)
+- `[x]` Bút toán Đảo Hoàn Tiền (Compensating Transactions): Tự động phát lệnh `REVERSE_DEBIT` và `REVERSE_CREDIT` khi sự cố xảy ra $\rightarrow$ Khôi phục số dư tài khoản nguồn về trạng thái ban đầu (`FAILED_COMPENSATED`)
+- `[x]` REST Controller: `SagaController` (`POST /api/v1/sagas/execute`, `GET /api/v1/sagas/{sagaId}`, `GET /api/v1/sagas`)
+- `[x]` Angular: `SagaService`, `SagaOrchestrationPage` giao diện trực quan hóa State Machine Stepper, Form giả lập kịch bản lỗi Credit/Ledger, Bảng Audit Step & Panel kiểm thử thủ công (tách `.ts`, `.html`, `.scss`)
+- `[x]` Test: Happy path execution, simulated credit failure compensation, state machine persistence & rollback correctness (Maven & Angular Build 100% SUCCESS)
 
 
 ---
@@ -251,9 +253,9 @@ Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
 Phase 3 (Sprint 13-18):       45/45 tasks  [100%]
-Phase 4 (Sprint 19-24):       21/45 tasks  [ 46%]
+Phase 4 (Sprint 19-24):       28/45 tasks  [ 62%]
 
-OVERALL: 152/135 tasks completed
+OVERALL: 159/135 tasks completed
 ```
 
 ---
@@ -272,6 +274,8 @@ OVERALL: 152/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 19 CQRS Transaction History Read Model (Kafka Projection, Cursor-based Pagination & Write/Read separation). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 20 Prometheus & Grafana Dashboard (Custom Business Metrics, Micrometer Actuator & System Observability). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 21 Distributed Tracing Jaeger (OpenTelemetry SDK, W3C traceparent, MDC Log Correlation & Waterfall Span Tree). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 22 Saga Orchestration (Distributed Transfer State Machine, Compensating Transactions & Reversal Ledger). Full stack Maven & Angular build xanh 100%.
+
 
 
 

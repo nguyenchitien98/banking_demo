@@ -507,25 +507,27 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 22: Saga Orchestration — Distributed Transfer
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
 **Kỹ thuật học:** Saga Orchestrator, State Machine, Compensating Transactions
 
 **Checklist:**
-- `[ ]` Kịch bản: Transfer sang service Account độc lập (giả lập Phase 2 microservices)
-- `[ ]` `TransferSagaOrchestrator` — Quản lý flow qua State Machine:
+- `[x]` Kịch bản: Transfer phân tán (giả lập liên ngân hàng / microservices tách DB)
+- `[x]` `TransferSagaOrchestrator` — Quản lý flow qua State Machine:
   ```
   STARTED → DEBIT_INITIATED → DEBIT_COMPLETED → CREDIT_INITIATED
            → CREDIT_COMPLETED → LEDGER_RECORDED → COMPLETED
   ```
-- `[ ]` Compensation steps:
-  - CREDIT_FAILED → Reverse Debit (credit lại account nguồn) → FAILED
-  - LEDGER_FAILED → Reverse Credit + Reverse Debit → FAILED
-- `[ ]` Flyway V13: `saga_instances` table (lưu state, saga_id, correlation_id)
-- `[ ]` Saga persistence: Mỗi bước update saga state vào DB → Idempotent recovery nếu restart
-- `[ ]` Test: Happy path, credit fails → verify debit reversed, saga timeout handling
+- `[x]` Compensation steps (Bút toán đảo hoàn tiền):
+  - CREDIT_FAILED → Reverse Debit (`REVERSE_DEBIT` hoàn tiền về tài khoản nguồn) → `FAILED_COMPENSATED`
+  - LEDGER_FAILED → Reverse Credit + Reverse Debit → `FAILED_COMPENSATED`
+- `[x]` Flyway V16: `saga_instances` & `saga_audit_steps` tables (lưu state, saga_id, audit steps)
+- `[x]` Saga persistence: Mỗi bước update saga state vào DB → Idempotent recovery nếu restart
+- `[x]` APIs: `POST /api/v1/sagas/execute`, `GET /api/v1/sagas/{sagaId}`, `GET /api/v1/sagas`
+- `[x]` Angular: `SagaService`, `SagaOrchestrationPage` (Visualizer Stepper State Machine, Form giả lập lỗi Credit/Ledger, Bảng Audit Steps & Panel kiểm thử thủ công)
+- `[x]` Test: Happy path, credit fails → verify debit reversed, saga state machine persistence (Maven & Angular Build 100% SUCCESS)
 
-**Kỹ thuật phỏng vấn:** "Transfer fail giữa chừng → rollback thế nào khi 2 DB khác nhau?"
+**Kỹ thuật phỏng vấn:** "Transfer fail giữa chừng → rollback thế nào khi 2 DB khác nhau? Sử dụng Saga Orchestration + Compensating Transactions (Bút toán đảo hoàn tiền)!"
 
 ---
 
