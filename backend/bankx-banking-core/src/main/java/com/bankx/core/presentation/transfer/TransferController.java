@@ -1,6 +1,7 @@
 package com.bankx.core.presentation.transfer;
 
 import com.bankx.common.dto.ApiResponse;
+import com.bankx.core.infrastructure.idempotency.annotation.Idempotent;
 import com.bankx.core.application.transfer.TransferApplicationService;
 import com.bankx.core.domain.account.model.BankAccount;
 import com.bankx.core.domain.auth.model.User;
@@ -71,6 +72,7 @@ public class TransferController {
      * @param traceId Header {@code X-Trace-Id}
      * @return {@link ResponseEntity} chứa {@link TransferResponse}
      */
+    @Idempotent(headerName = "X-Idempotency-Key", ttlSeconds = 600, message = "Giao dịch trùng lặp hoặc đang được xử lý, vui lòng chờ trong giây lát!")
     @PostMapping("/internal")
     public ResponseEntity<ApiResponse<TransferResponse>> createInternalTransfer(
             @AuthenticationPrincipal User currentUser,

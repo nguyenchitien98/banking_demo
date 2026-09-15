@@ -38,10 +38,24 @@
   flex-direction: column;
   gap: 1.25rem;
 
-  .section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+  .form-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .key-badge {
+      font-size: 0.75rem;
+      background: var(--color-bg);
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
   }
 
   .form-group {
@@ -149,6 +163,17 @@
   text-align: center;
   padding: 2.5rem 2rem;
 
+  .idempotency-badge-success {
+    background: #e1f5fe;
+    color: #0288d1;
+    border: 1px solid #81d4fa;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
   .success-icon-badge {
     width: 80px;
     height: 80px;
@@ -209,6 +234,7 @@
     gap: 1rem;
     width: 100%;
     max-width: 480px;
+    flex-wrap: wrap;
   }
 }
 
@@ -362,6 +388,19 @@
 }
 
 .font-mono { font-family: monospace; }
+.text-xs { font-size: 0.75rem; }
 .font-bold { font-weight: 700; }
 .text-success { color: var(--color-success); }
 .text-primary { color: var(--bank-primary); }
+
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #323232;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  z-index: 2000;
+}

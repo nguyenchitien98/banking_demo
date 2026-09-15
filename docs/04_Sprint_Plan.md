@@ -200,17 +200,18 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 08: Idempotency — Chống Transfer Trùng Lặp
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Idempotency Key, Redis SETNX, AOP @Idempotent
 
 **Checklist:**
-- `[ ]` `@Idempotent` custom annotation + AOP Aspect
-- `[ ]` Redis: `idempotency:{uuid}` → SETNX với TTL 10 phút
-- `[ ]` Response caching: Sau khi success, lưu response vào Redis → Lần 2 trả về cached response
-- `[ ]` Angular: Auto-generate UUID v4 trước khi submit transfer
-- `[ ]` API header: `Idempotency-Key: {uuid}`
-- `[ ]` Test: Gửi cùng request 3 lần → chỉ 1 transfer được tạo, response giống nhau
+- `[x]` `@Idempotent` custom annotation + AOP Aspect `IdempotencyAspect`
+- `[x]` Redis: `idempotency:lock:{uuid}` → `SETNX` (opsForValue().setIfAbsent) với TTL 10 phút
+- `[x]` Response caching: Sau khi success, lưu response JSON vào Redis $\rightarrow$ Lần 2 trả về cached response
+- `[x]` Angular: `TransferService.generateIdempotencyKey()` tự động tạo UUID v4 trước khi submit transfer
+- `[x]` API header: `X-Idempotency-Key: {uuid}`
+- `[x]` Angular UI: Nút thử nghiệm gửi lại cùng Key $\rightarrow$ Nhận phản hồi từ Redis Cache mà KHÔNG trừ thêm tiền & Panel kiểm thử thủ công
+- `[x]` Test: Gửi cùng request 3 lần → chỉ 1 transfer được tạo, 2 lần sau trả về cached response (Maven & Angular Build 100% SUCCESS)
 
 **Kỹ thuật phỏng vấn:** "User bấm transfer 2 lần (double click) → xử lý thế nào?"
 

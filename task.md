@@ -104,13 +104,16 @@
 
 ---
 
-## 🔁 Sprint 08 — Idempotency
+## 🔁 Sprint 08 — Idempotency (Chống Transfer Trùng Lặp)
 
-- `[ ]` @Idempotent AOP Aspect
-- `[ ]` Redis SETNX idempotency:uuid TTL 10m
-- `[ ]` Response caching
-- `[ ]` Angular: UUID generation trước submit
-- `[ ]` Test: 3x same request → 1 transfer created
+- `[x]` Custom Annotation `@Idempotent` với thông số `headerName`, `ttlSeconds`, `message`
+- `[x]` AOP Aspect `IdempotencyAspect` can thiệp các request chuyển tiền
+- `[x]` Redis SETNX (`tryAcquireLock`) key pattern: `idempotency:lock:{key}` (TTL 10m)
+- `[x]` Redis Response Caching (`cacheResponse` / `getCachedResponse`) lưu trữ phản hồi JSON kết quả
+- `[x]` Applied `@Idempotent` trên `TransferController.createInternalTransfer()`
+- `[x]` Angular: `TransferService.generateIdempotencyKey()` (UUID v4) đính kèm Header `X-Idempotency-Key`
+- `[x]` Angular: `TransfersPage` nút thử nghiệm gửi lại cùng Key $\rightarrow$ Trả về Cached Response mà KHÔNG trừ tiền lần 2 & Panel kiểm thử thủ công
+- `[x]` Test: Concurrent duplicate request lock & repeated cached request (Maven & Angular Build 100% SUCCESS)
 
 ---
 

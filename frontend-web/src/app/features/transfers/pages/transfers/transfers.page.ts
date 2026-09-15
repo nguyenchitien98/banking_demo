@@ -5,15 +5,17 @@ import { AccountService, BankAccount } from '../../../../core/services/account.s
 import { TransferService, TransferResult } from '../../../../core/services/transfer.service';
 
 /**
- * Màn hình Thực hiện Chuyển tiền Nội bộ (Internal Bank Transfer Page — TPBank UI).
+ * Màn hình Thực hiện Chuyển tiền Nội bộ & Kiểm thử Idempotency (Internal Bank Transfer Page — TPBank UI).
  *
  * Chức năng:
  * - Chọn tài khoản trích nợ (Source Account).
+ * - Tự động sinh Idempotency Key (UUID v4) bảo vệ từng giao dịch.
  * - Truy vấn số tài khoản thụ hưởng (Recipient Inquiry).
  * - Nhập số tiền giao dịch và các phím chọn nhanh.
  * - Modal xác nhận giao dịch trước khi gửi lệnh.
  * - Biên lai giao dịch thành công (Transfer Result Receipt).
- * - Panel Hướng dẫn Kiểm thử Thủ công (Verification Guide Panel) cho Sprint 07.
+ * - Tính năng Thử nghiệm Gửi lại với CÙNG Idempotency Key để kiểm tra Redis AOP Aspect.
+ * - Panel Hướng dẫn Kiểm thử Thủ công (Verification Guide Panel) cho Sprint 08.
  *
  * @author BankX Engineering Team
  * @version 1.0
@@ -35,12 +37,17 @@ export class TransfersPage implements OnInit {
   public amount = 500000;
   public description = 'Chuyen tien noi bo BankX';
 
+  // Idempotency State
+  public currentIdempotencyKey = '';
+  public wasFromCache = false;
+
   // State
   public inquiring = false;
   public recipientName: string | null = null;
   public recipientError: string | null = null;
   public formError: string | null = null;
   public submitting = false;
+  public toastMessage: string | null = null;
 
   // Confirmation Modal
   public showConfirmModal = false;
@@ -49,6 +56,7 @@ export class TransfersPage implements OnInit {
   public completedTransfer: TransferResult | null = null;
 
   ngOnInit(): void {
+    this.currentIdempotencyKey = this.transferService.generateIdempotencyKey();
     this.loadAccounts();
   }
 
@@ -144,12 +152,14 @@ export class TransfersPage implements OnInit {
 
   submitTransfer(): void {
     this.submitting = true;
+    this.wasFromCache = false;
 
     this.transferService.createInternalTransfer({
       sourceAccountId: this.sourceAccountId,
       targetAccountNumber: this.targetAccountNumber.trim(),
       amount: this.amount,
-      description: this.description
+      description: this.description,
+      idempotencyKey: this.currentIdempotencyKey
     }).subscribe({
       next: (res) => {
         this.submitting = false;
@@ -167,6 +177,31 @@ export class TransfersPage implements OnInit {
     });
   }
 
+  resendSameIdempotencyKey(): void {
+    if (!this.completedTransfer) return;
+
+    this.wasFromCache = true;
+    this.showToast(`Đang thử gửi lại request với CÙNG Key: ${this.currentIdempotencyKey}`);
+
+    this.transferService.createInternalTransfer({
+      sourceAccountId: this.completedTransfer.sourceAccountId,
+      targetAccountNumber: this.completedTransfer.targetAccountNumber,
+      amount: this.completedTransfer.amount,
+      description: this.completedTransfer.description,
+      idempotencyKey: this.currentIdempotencyKey
+    }).subscribe({
+      next: (res) => {
+        if (res.code === 0 && res.data) {
+          this.completedTransfer = res.data;
+          this.showToast('✅ ĐÃ BẮT IDEMPOTENCY KEY! Kết quả được trả về từ Redis Cache (không trừ thêm tiền).');
+        }
+      },
+      error: (err) => {
+        this.showToast(`Lỗi gửi lại: ${err?.error?.message || 'Có lỗi xảy ra'}`);
+      }
+    });
+  }
+
   getSourceAccountNumber(): string {
     const acc = this.accounts().find((a) => a.id === this.sourceAccountId);
     return acc ? `${acc.accountNumber} (${acc.accountName})` : '';
@@ -179,9 +214,18 @@ export class TransfersPage implements OnInit {
     this.recipientError = null;
     this.amount = 500000;
     this.formError = null;
+    this.wasFromCache = false;
+    this.currentIdempotencyKey = this.transferService.generateIdempotencyKey();
   }
 
   printReceipt(): void {
     window.print();
+  }
+
+  private showToast(msg: string): void {
+    this.toastMessage = msg;
+    setTimeout(() => {
+      this.toastMessage = null;
+    }, 4500);
   }
 }

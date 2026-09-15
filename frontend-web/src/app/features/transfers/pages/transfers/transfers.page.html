@@ -1,8 +1,8 @@
 <div class="transfers-container">
   <!-- Page Header -->
   <div class="page-header">
-    <h2>Chuyển tiền Nội bộ BankX</h2>
-    <p class="subtitle">Chuyển tiền miễn phí 24/7 tức thì giữa các tài khoản hệ thống BankX</p>
+    <h2>Chuyển tiền Nội bộ & Bảo vệ Idempotency</h2>
+    <p class="subtitle">Chuyển tiền miễn phí 24/7 với cơ chế chống giao dịch trùng lặp bằng AOP &#64;Idempotency & Redis SETNX</p>
   </div>
 
   <div class="transfers-grid">
@@ -16,6 +16,11 @@
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
+
+          <div class="idempotency-badge-success" *ngIf="wasFromCache">
+            ⚡ Phản hồi từ Redis Cache (Idempotency Key đã được bảo vệ!)
+          </div>
+
           <h3>Giao dịch Chuyển tiền Thành công!</h3>
           <div class="result-amount-display">
             -{{ completedTransfer.amount | number:'1.0-0' }} VND
@@ -25,6 +30,10 @@
             <div class="receipt-row">
               <span class="label">Mã giao dịch</span>
               <span class="val font-mono">{{ completedTransfer.transferCode }}</span>
+            </div>
+            <div class="receipt-row">
+              <span class="label">Idempotency Key</span>
+              <span class="val font-mono text-xs">{{ currentIdempotencyKey }}</span>
             </div>
             <div class="receipt-row">
               <span class="label">Người thụ hưởng</span>
@@ -49,14 +58,21 @@
           </div>
 
           <div class="receipt-actions">
-            <button class="btn-secondary" (click)="resetForm()">Tạo giao dịch mới</button>
-            <button class="btn-primary" (click)="printReceipt()">Tải biên lai (PDF)</button>
+            <button class="btn-secondary" (click)="resetForm()">Tạo giao dịch mới (Key mới)</button>
+            <button class="btn-primary" (click)="resendSameIdempotencyKey()">
+              🔁 Gửi lại với CÙNG Idempotency Key (Test Sprint 08)
+            </button>
           </div>
         </div>
       } @else {
         <!-- Transfer Form -->
         <div class="card form-card">
-          <h3 class="section-title">Thông tin Giao dịch</h3>
+          <div class="form-header-row">
+            <h3 class="section-title">Thông tin Giao dịch</h3>
+            <div class="key-badge" title="Mã chống trùng lặp">
+              🔑 Key: <span class="font-mono text-xs">{{ currentIdempotencyKey }}</span>
+            </div>
+          </div>
 
           <div class="form-group">
             <label>1. Chọn Tài khoản trích nợ</label>
@@ -107,7 +123,7 @@
 
           <div class="form-group">
             <label>4. Lời nhắn / Diễn giải nội dung</label>
-            <input type="text" [(ngModel)]="description" class="input-field" placeholder="Chuyen tien cho ban" />
+            <input type="text" [(ngModel)]="description" class="input-field" placeholder="Chuyen tien noi bo BankX" />
           </div>
 
           @if (formError) {
@@ -125,18 +141,18 @@
     <div class="side-column">
       <!-- Limits Card -->
       <div class="card limits-card">
-        <h3 class="section-title">Hạn mức chuyển tiền</h3>
+        <h3 class="section-title">Cơ chế Idempotency Key</h3>
         <div class="limit-info-row">
-          <span class="label">Hạn mức 1 lần giao dịch</span>
-          <span class="val">50.000.000 VND</span>
+          <span class="label">Header bảo vệ</span>
+          <span class="val font-mono">X-Idempotency-Key</span>
         </div>
         <div class="limit-info-row">
-          <span class="label">Hạn mức tối đa/ngày</span>
-          <span class="val">500.000.000 VND</span>
+          <span class="label">Thuật toán Lock</span>
+          <span class="val">Redis SETNX (10m TTL)</span>
         </div>
         <div class="limit-info-row">
-          <span class="label">Phí chuyển tiền</span>
-          <span class="val text-success font-bold">MIỄN PHÍ</span>
+          <span class="label">Trạng thái Response</span>
+          <span class="val text-success font-bold">Cached in Redis</span>
         </div>
       </div>
 
@@ -144,26 +160,26 @@
       <div class="verification-panel card">
         <div class="panel-header">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7b2d8b" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 07)</h4>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 08 — Idempotency)</h4>
         </div>
 
         <div class="panel-body">
           <div class="test-scenario">
-            <span class="scenario-title">1. Truy vấn Tên người thụ hưởng (Inquiry):</span>
-            <p>Nhập số tài khoản thụ hưởng và bấm <strong>"Kiểm tra"</strong> để gọi <code>GET /api/v1/transfers/recipient-inquiry</code> lấy tên chính xác.</p>
+            <span class="scenario-title">1. Chống bấm đúp (Double-Submit Prevention):</span>
+            <p>Mỗi khi bắt đầu tạo lệnh, Angular tự động tạo 1 <code>UUID v4</code> trong Header <code>X-Idempotency-Key</code>.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">2. Chuỗi Kiểm tra Điều kiện (Validation Chain):</span>
-            <p>Hệ thống tự động kiểm tra: Số dư khả dụng &gt;= Số tiền, Trạng thái tài khoản = ACTIVE, Số tiền &lt;= Hạn mức ngày 500M.</p>
+            <span class="scenario-title">2. Thử nghiệm Gửi trùng Request:</span>
+            <p>Sau khi chuyển tiền thành công, bấm nút <strong>"🔁 Gửi lại với CÙNG Idempotency Key"</strong>. Backend sẽ bắt được key trong Redis và trả về kết quả Cached mà KHÔNG trừ thêm tiền lần 2!</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">3. Hạch toán Nguyên tố (Atomic Transaction):</span>
-            <p>Xử lý đồng thời trích nợ, ghi có, ghi sổ kép `LedgerEntry` và tạo biên lai `BankTransfer` trong 1 <code>&#64;Transactional</code>.</p>
+            <span class="scenario-title">3. Khóa đồng thời (Distributed Lock):</span>
+            <p>AOP Aspect <code>&#64;Idempotent</code> dùng lệnh <code>SETNX</code> trên Redis để từ chối các request trùng lắp đang chạy song song.</p>
           </div>
         </div>
       </div>
@@ -198,8 +214,8 @@
               <span class="val amount-val">{{ amount | number:'1.0-0' }} VND</span>
             </div>
             <div class="confirm-row">
-              <span class="label">Nội dung</span>
-              <span class="val">{{ description }}</span>
+              <span class="label">Idempotency Key</span>
+              <span class="val font-mono text-xs">{{ currentIdempotencyKey }}</span>
             </div>
           </div>
         </div>
@@ -211,6 +227,13 @@
           </button>
         </div>
       </div>
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toastMessage) {
+    <div class="toast-notification">
+      {{ toastMessage }}
     </div>
   }
 </div>
