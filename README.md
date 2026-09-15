@@ -1,133 +1,206 @@
-# BankX Digital Banking Platform
+# 🏦 Titan BankX — Digital Banking Platform
 
-> Dự án ngân hàng số mô phỏng TPBank — Xây dựng để học Java Senior Banking Architecture + Angular Banking Frontend
-
-![BankX UI Preview](./banking/UI_TPBank.png)
+> Nền tảng Ngân hàng Số mô phỏng TPBank, xây dựng hoàn chỉnh theo tiêu chuẩn Banking-Grade  
+> **27 Sprints · Java 21 + Spring Boot 3 · Angular 22 · PostgreSQL · Kafka · Redis**
 
 ---
 
-## 🎯 Mục Tiêu Dự Án
+## ✨ Giới Thiệu
 
-1. **Học Banking Domain:** Ledger kép, Transfer flow, OTP, KYC, Fraud Detection
-2. **Java Enterprise Architecture:** Clean Architecture, DDD, Hexagonal, CQRS
-3. **Distributed Systems:** Kafka, Outbox Pattern, Saga, Idempotency, Circuit Breaker
-4. **Angular Banking Frontend:** Signals, NgRx, Lazy Loading, Ionic Mobile
-5. **Chuẩn bị phỏng vấn Banking Java Senior**
+**Titan BankX** là dự án ngân hàng số học thuật cấp Senior Engineer, mô phỏng đầy đủ các nghiệp vụ cốt lõi của một ngân hàng thương mại hiện đại (dựa trên TPBank). Dự án được xây dựng qua **27 Sprints** theo lộ trình từ Foundation đến Production Hardening.
+
+**Mục tiêu:** Học và thực hành toàn bộ Banking Architecture patterns ở mức Senior Java Engineer, chuẩn bị cho phỏng vấn Banking Java Senior / Distributed Systems.
 
 ---
 
 ## 🏗️ Kiến Trúc Tổng Quan
 
 ```
-Angular Web + Ionic Mobile
-         ↓
-  Spring Cloud Gateway (Rate Limit, Auth Filter, Routing)
-         ↓
-  BankX Banking Core (Modular Monolith — Phase 1)
-  ├── Auth Module (JWT, OTP, Refresh Token Rotation)
-  ├── Customer Module (KYC, Profile)
-  ├── Account Module (Balance, Optimistic Lock)
-  ├── Transfer Module (Idempotency, Saga, Outbox)
-  ├── Ledger Module (Double-Entry Bookkeeping)
-  ├── Payment Module (Strategy Pattern, Bill, QR)
-  ├── Card Module (Tokenization, Virtual Card)
-  ├── Notification Module (Kafka Consumer)
-  ├── Fraud Module (Rule Engine, Risk Score)
-  └── Audit Module (Immutable Trail)
-         ↓
-  PostgreSQL + Redis + Kafka
-         ↓
-  Prometheus + Grafana + Jaeger (Observability)
+┌─────────────────────────────────────────────────────────────┐
+│                   Angular 22 Web App (Port 4200)            │
+│         (Standalone Components · Signals · Lazy Loading)    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ HTTP/REST
+┌─────────────────────────▼───────────────────────────────────┐
+│           Spring Cloud API Gateway (Port 8080)              │
+│        (CORS · Rate Limit · Auth Filter · Correlation ID)   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│              BankX Banking Core (Port 8081)                 │
+│                  Modular Monolith — Java 21                  │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
+│  │Auth Module │ │Customer KYC│ │Account Core│ │ Transfer │ │
+│  │JWT·OTP·Lock│ │eKYC·Profile│ │@Version·OL │ │Saga·OTP  │ │
+│  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
+│  │  Ledger   │ │  Payment   │ │    Card    │ │Notification│ │
+│  │Double-Entry│ │Strategy/QR │ │Tokenization│ │Kafka·DLQ │ │
+│  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
+│  │   Fraud   │ │Beneficiary │ │ Admin Core │ │   CQRS   │ │
+│  │Rule Engine │ │SmartSuggest│ │eKYC·Audit  │ │Read Model│ │
+│  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐              │
+│  │   Saga    │ │Circuit Bkr │ │Engineering │              │
+│  │Orchestrator│ │Resilience4j│ │Portal/Chaos│              │
+│  └────────────┘ └────────────┘ └────────────┘              │
+└────────┬───────────────┬────────────────┬───────────────────┘
+         │               │                │
+    ┌────▼────┐    ┌──────▼─────┐  ┌──────▼─────┐
+    │PostgreSQL│    │   Redis 7  │  │Apache Kafka│
+    │   16    │    │Cache·Session│  │Outbox·Event│
+    └─────────┘    └────────────┘  └────────────┘
+         │
+    ┌────▼────────────────────────────────────────┐
+    │     Observability Stack                      │
+    │  Prometheus · Grafana · Jaeger (OpenTelemetry)│
+    └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📚 Tài Liệu (Đọc Theo Thứ Tự Này)
+## 🎯 Kỹ Thuật Đã Học & Triển Khai
+
+### 🔐 Auth & Security
+| Kỹ Thuật | Mô Tả | Sprint |
+|---|---|---|
+| JWT + Refresh Token Rotation | Access Token 15m, Refresh Token 7d, revoke on use | S02 |
+| OTP Risk-Based Authentication | 6-digit, Redis TTL 120s, max 3 attempts, block 5m | S03 |
+| Account Lock | 5 failed attempts → lock 30m | S02 |
+| KYC & Identity Masking | Customer CIF, identity number masking in logs | S04 |
+
+### 💰 Core Banking
+| Kỹ Thuật | Mô Tả | Sprint |
+|---|---|---|
+| Double-Entry Bookkeeping | `SUM(DEBIT) == SUM(CREDIT)`, Immutable Ledger | S06 |
+| Idempotency (Redis SETNX) | AOP `@Idempotent`, UUID Key, Response Caching | S08 |
+| Optimistic Locking (`@Version`) | Race condition prevention + Spring Retry x3 | S09 |
+| Risk-Based Transfer OTP | < 5M → Direct; ≥ 5M → OTP 2-layer | S10 |
+| Transactional Outbox Pattern | DB + Kafka atomic consistency, At-Least-Once | S11 |
+| Idempotent Kafka Consumer | Redis `consumed_event:{id}` TTL 1h | S12 |
+
+### 💳 Advanced Features
+| Kỹ Thuật | Mô Tả | Sprint |
+|---|---|---|
+| Strategy Pattern (Bill Payment) | EVN/Water/Viettel/Mock providers, OCP compliance | S13 |
+| VietQR EMVCo Standard | TLV Parser/Generator, CRC-16/CCITT-FALSE | S14 |
+| PCI-DSS Card Tokenization | Virtual PAN, Masked PAN, Card FSM State Machine | S15 |
+| Fraud Rule Engine | 5 rules, Risk Score 0-100, ALLOW/OTP/BLOCK | S16 |
+| Smart Beneficiary Suggestions | Frequency tracking, auto-save, Top-4 suggestions | S17 |
+| Admin Portal & eKYC Review | KYC workflow, emergency freeze, audit trail | S18 |
+
+### ⚡ Distributed Systems
+| Kỹ Thuật | Mô Tả | Sprint |
+|---|---|---|
+| CQRS + Kafka Projection | Write/Read model separation, Cursor-based pagination | S19 |
+| Prometheus + Grafana | Custom business metrics, Micrometer, JVM metrics | S20 |
+| OpenTelemetry + Jaeger | Distributed Tracing, W3C traceparent, MDC correlation | S21 |
+| Saga Orchestration | State Machine, Compensating Transactions `REVERSE_DEBIT` | S22 |
+| Resilience4j | Circuit Breaker 3-state, Rate Limiter 5 req/s, Retry, Bulkhead | S23 |
+| Chaos Engineering | DB Delay, Kafka Down, Flood 100 Transfers | S24 |
+
+### 🛠️ Engineering
+| Kỹ Thuật | Mô Tả | Sprint |
+|---|---|---|
+| Swagger / OpenAPI 3 | JWT Bearer Auth, `@Tag`, `@Operation`, Interactive UI | S25 |
+| k6 Load Testing | 100 VUs Transfer, Race Condition Test, Auth Rate Limit | S26 |
+| Java 21 Virtual Threads | `spring.threads.virtual.enabled=true`, Project Loom | S26 |
+| DB Backup/Restore Scripts | PowerShell 1-click backup/restore PostgreSQL & Redis | S27 |
+
+---
+
+## 🚀 Quick Start (5 Phút)
+
+```powershell
+# 1. Khởi động Infrastructure
+cd c:\Users\Admin\Desktop\banking\infrastructure
+docker compose up -d
+
+# 2. Khởi động Backend (Terminal 1)
+cd c:\Users\Admin\Desktop\banking\backend\bankx-banking-core
+mvn spring-boot:run
+
+# 3. Khởi động Frontend (Terminal 2)
+cd c:\Users\Admin\Desktop\banking\frontend-web
+npx ng serve --open
+```
+
+**Xem hướng dẫn chi tiết:** [guide_run.md](./guide_run.md)
+
+---
+
+## 🌐 URLs & Services
+
+| Dịch Vụ | URL |
+|---|---|
+| 🌐 Angular Web App | http://localhost:4200 |
+| 🔌 Banking Core API | http://localhost:8081 |
+| 📖 **Swagger UI** | http://localhost:8081/swagger-ui/index.html |
+| 📊 Kafka UI | http://localhost:8090 |
+| 📈 Grafana | http://localhost:3000 |
+| 🎯 Prometheus | http://localhost:9090 |
+| 🔍 Jaeger Tracing | http://localhost:16686 |
+
+---
+
+## 📚 Tài Liệu
 
 | # | Tài Liệu | Mô Tả |
 |---|---|---|
-| 1 | [Project Vision](./banking/docs/00_Project_Vision.md) | Tầm nhìn, scope, technology stack |
-| 2 | [Architecture Bible](./banking/docs/01_Architecture_Bible.md) | Kiến trúc chi tiết, sequence diagrams, patterns |
-| 3 | [Coding Guideline](./banking/docs/02_Coding_Guideline.md) | Coding standards, Javadoc, naming conventions |
-| 4 | [Backlog](./banking/docs/03_Backlog.md) | Epics, User Stories, Acceptance Criteria |
-| 5 | [Sprint Plan](./banking/docs/04_Sprint_Plan.md) | 30 Sprint roadmap với checklist |
-| 6 | [AI Coding Guide](./banking/docs/05_AI_Coding_Guide.md) | Prompt templates, rules cho AI agents |
-| 7 | [Database Schema](./banking/docs/06_Database_Schema.md) | Schema tất cả bảng DB + Flyway history |
-| 8 | [UI/UX Standard](./banking/docs/07_UI_UX_Standard.md) | TPBank design tokens, component specs |
-| 9 | [Interview Q&A](./banking/docs/09_Interview_QA_Banking.md) | Hỏi đáp phỏng vấn banking |
-| 10 | [ADR](./banking/docs/adr/) | Architecture Decision Records |
+| 1 | [guide_run.md](./guide_run.md) | **Hướng dẫn chạy Local chi tiết** |
+| 2 | [docs/question.md](./docs/question.md) | **Câu hỏi phỏng vấn Banking Senior** |
+| 3 | [docs/04_Sprint_Plan.md](./docs/04_Sprint_Plan.md) | Lộ trình 27 Sprints chi tiết |
+| 4 | [docs/01_Architecture_Bible.md](./docs/01_Architecture_Bible.md) | Kiến trúc tổng thể |
+| 5 | [docs/06_Database_Schema.md](./docs/06_Database_Schema.md) | Schema CSDL & Flyway |
+| 6 | [docs/10_Performance_Report.md](./docs/10_Performance_Report.md) | k6 Load Test Results |
+| 7 | [task.md](./task.md) | Tracker tiến độ 27 Sprints |
 
 ---
 
-## 🚀 Quick Start (Sau Sprint 00)
+## 📊 Sprint Progress — 100% Hoàn Thành
 
-```bash
-# Clone + setup
-cd banking
+```
+Phase 0 — Infrastructure Foundation:    [██████████] Sprint 00        ✅
+Phase 1 — Auth & Account Core:          [██████████] Sprint 01–05     ✅
+Phase 2 — Transfer Core (Banking Heart):[██████████] Sprint 06–12     ✅
+Phase 3 — Payment & Advanced Features:  [██████████] Sprint 13–18     ✅
+Phase 4 — Distributed & Observability:  [██████████] Sprint 19–24     ✅
+Phase 5 — Engineering & Local DevOps:   [██████████] Sprint 25–27     ✅
 
-# Start infrastructure
-docker-compose -f infrastructure/docker-compose.yml up -d
-
-# Start backend (Phase 1 - Modular Monolith)
-cd backend
-mvn spring-boot:run -pl bankx-api-gateway -Dspring-boot.run.profiles=local &
-mvn spring-boot:run -pl bankx-banking-core -Dspring-boot.run.profiles=local
-
-# Start Angular web
-cd frontend-web
-npm install
-ng serve
-
-# URLs:
-# 🌐 Web App:      http://localhost:4200
-# 🔌 API Gateway:  http://localhost:8090
-# 📊 Kafka UI:     http://localhost:8080
-# 📈 Grafana:      http://localhost:3000
-# 🔍 Jaeger:       http://localhost:16686
+OVERALL: 27 / 27 Sprints  ████████████████████████████  100%
 ```
 
 ---
 
-## 📊 Sprint Progress
+## 🔑 Tài Khoản Demo
 
-```
-Phase 0 (Foundation):     [ ] Sprint 00
-Phase 1 (Core):           [ ] Sprint 01 → 05
-Phase 2 (Banking Heart):  [ ] Sprint 06 → 12
-Phase 3 (Advanced):       [ ] Sprint 13 → 18
-Phase 4 (Distributed):    [ ] Sprint 19 → 24
-Phase 5 (Mobile+Prod):    [ ] Sprint 25 → 30
+| Username | Password | Vai Trò |
+|---|---|---|
+| `admin` | `Admin@123456` | Admin Portal, eKYC Review, Audit Trail |
+| `user01` | `User@123456` | Khách hàng thông thường |
 
-Chi tiết: banking/task.md
+---
+
+## ⚡ k6 Load Test
+
+```powershell
+k6 run k6/test-transfer-load.js        # 100 VUs, TPS > 200
+k6 run k6/test-concurrent-transfer.js  # Race Condition Test
+k6 run k6/test-auth-rate-limit.js      # Auth Rate Limit Test
 ```
 
 ---
 
-## 🔑 Banking Concepts Learned
+## 🎤 Phỏng Vấn
 
-Sau khi hoàn thành dự án, sẽ hiểu và implement được:
+File [docs/question.md](./docs/question.md) tổng hợp **60+ câu hỏi phỏng vấn chuyên sâu** theo format:
+- ❓ **Câu hỏi thực tế** từ phỏng vấn Banking Java Senior
+- ❌ **Tại sao KHÔNG** — Phân tích trade-offs, Anti-patterns
+- ✅ **Tại sao NÊN** — Giải pháp đúng với lý do cụ thể từ code BankX
 
-- ✅ **Double-Entry Bookkeeping** — Ledger entries, không thể âm tổng
-- ✅ **Idempotency** — Chống duplicate transfer với Redis SETNX
-- ✅ **Optimistic Locking** — Chống race condition khi rút tiền đồng thời
-- ✅ **Outbox Pattern** — Đảm bảo DB + Kafka consistency
-- ✅ **Saga Orchestration** — Distributed transaction với compensation
-- ✅ **JWT + Refresh Token Rotation** — Secure session management
-- ✅ **OTP Flow** — Risk-based authentication
-- ✅ **Rate Limiting** — Token Bucket in Redis
-- ✅ **Circuit Breaker** — Resilience4j, 3 states
-- ✅ **CQRS** — Transaction History Read Model
-- ✅ **Distributed Tracing** — OpenTelemetry + Jaeger
-- ✅ **Clean Architecture** — Domain independence from framework
-- ✅ **Strategy Pattern** — Bill Payment providers
-- ✅ **Angular Signals** — Modern reactive state management
+Bao gồm: Saga/Outbox, Idempotency, Optimistic Lock, Double-Entry, JWT, CQRS, Circuit Breaker, Kafka, Fraud Detection, Clean Architecture, Performance...
 
 ---
 
-## 👨‍💻 Dành Cho AI Agents
-
-Khi làm việc trong thư mục `banking/`:
-1. Đọc `banking/.agents/AGENTS.md` — Rules bắt buộc
-2. Đọc `banking/docs/05_AI_Coding_Guide.md` — Workflow và prompt templates
-3. Dùng skill `banking-java-backend` khi code Java
-4. Dùng skill `banking-angular-frontend` khi code Angular
+*Titan BankX — Built with ❤️ for Banking Engineering Excellence*
