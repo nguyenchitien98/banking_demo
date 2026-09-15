@@ -18,9 +18,11 @@ import java.util.UUID;
  * @param fee Phí chuyển tiền
  * @param description Diễn giải nội dung
  * @param transferType Loại chuyển tiền (INTERNAL / NAPAS247)
- * @param status Trạng thái (COMPLETED / FAILED)
+ * @param status Trạng thái (COMPLETED / PENDING_OTP / FAILED)
  * @param transactionId ID giao dịch hạch toán sổ kép
  * @param createdAt Thời điểm tạo lệnh
+ * @param requiresOtp Đánh dấu giao dịch có yêu cầu xác thực OTP hay không (Giao dịch >= 5M)
+ * @param mockOtp Mã OTP giả lập cho môi trường kiểm thử (Sprint 10)
  *
  * @author BankX Engineering Team
  * @version 1.0
@@ -39,5 +41,19 @@ public record TransferResponse(
         String transferType,
         String status,
         UUID transactionId,
-        Instant createdAt
-) {}
+        Instant createdAt,
+        boolean requiresOtp,
+        String mockOtp
+) {
+    /**
+     * Overloaded Constructor cho các gọi lệnh truyền thống không có OTP flag.
+     */
+    public TransferResponse(UUID id, String transferCode, UUID sourceAccountId, UUID targetAccountId,
+                            String targetAccountNumber, String targetAccountName, BigDecimal amount,
+                            String currency, BigDecimal fee, String description, String transferType,
+                            String status, UUID transactionId, Instant createdAt) {
+        this(id, transferCode, sourceAccountId, targetAccountId, targetAccountNumber, targetAccountName,
+                amount, currency, fee, description, transferType, status, transactionId, createdAt, false, null);
+    }
+}
+

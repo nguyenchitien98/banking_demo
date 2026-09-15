@@ -25,6 +25,8 @@ export interface TransferResult {
   status: string;
   transactionId: string;
   createdAt: string;
+  requiresOtp?: boolean;
+  mockOtp?: string;
 }
 
 export interface CreateTransferRequest {
@@ -36,7 +38,7 @@ export interface CreateTransferRequest {
 }
 
 /**
- * Service xử lý các giao dịch Chuyển tiền & Idempotency Key (Transfer Service).
+ * Service xử lý các giao dịch Chuyển tiền & Risk-based OTP (Transfer Service).
  */
 @Injectable({
   providedIn: 'root',
@@ -79,9 +81,17 @@ export class TransferService {
   }
 
   /**
+   * Xác nhận mã OTP để hoàn tất giao dịch chuyển tiền (Giao dịch >= 5M VND)
+   */
+  confirmTransferOtp(id: string, otpCode: string): Observable<ApiResponse<TransferResult>> {
+    return this.http.post<ApiResponse<TransferResult>>(`${this.API_URL}/${id}/confirm-otp`, { otpCode });
+  }
+
+  /**
    * Lấy chi tiết lệnh chuyển tiền
    */
   getTransferDetail(id: string): Observable<ApiResponse<TransferResult>> {
     return this.http.get<ApiResponse<TransferResult>>(`${this.API_URL}/${id}`);
   }
 }
+

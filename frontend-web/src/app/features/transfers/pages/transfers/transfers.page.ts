@@ -52,6 +52,16 @@ export class TransfersPage implements OnInit {
   // Confirmation Modal
   public showConfirmModal = false;
 
+  // Sprint 10 Risk-based OTP Modal State
+  public showOtpModal = false;
+  public pendingTransferId: string | null = null;
+  public otpInput = '';
+  public otpError: string | null = null;
+  public mockOtpHint: string | null = null;
+  public otpCountdown = 120;
+  public verifyingOtp = false;
+  private timerInterval: any = null;
+
   // Completed Result Receipt
   public completedTransfer: TransferResult | null = null;
 
@@ -165,8 +175,20 @@ export class TransfersPage implements OnInit {
         this.submitting = false;
         this.showConfirmModal = false;
         if (res.code === 0 && res.data) {
-          this.completedTransfer = res.data;
-          this.loadAccounts(); // Refresh balance
+          if (res.data.status === 'PENDING_OTP' || res.data.requiresOtp) {
+            // High Risk (>= 5M VND): Show OTP modal step!
+            this.pendingTransferId = res.data.id;
+            this.mockOtpHint = res.data.mockOtp || '123456';
+            this.otpInput = res.data.mockOtp || '';
+            this.otpError = null;
+            this.showOtpModal = true;
+            this.startOtpTimer();
+            this.showToast('⚠️ Giao dịch từ 5.000.000 VND yêu cầu xác thực OTP an toàn.');
+          } else {
+            // Low Risk (< 5M VND): Completed directly!
+            this.completedTransfer = res.data;
+            this.loadAccounts(); // Refresh balance
+          }
         }
       },
       error: (err) => {
@@ -176,6 +198,69 @@ export class TransfersPage implements OnInit {
       }
     });
   }
+
+  confirmOtp(): void {
+    if (!this.pendingTransferId) return;
+    if (!this.otpInput || this.otpInput.length !== 6) {
+      this.otpError = 'Mã OTP phải gồm 6 chữ số!';
+      return;
+    }
+
+    this.verifyingOtp = true;
+    this.otpError = null;
+
+    this.transferService.confirmTransferOtp(this.pendingTransferId, this.otpInput).subscribe({
+      next: (res) => {
+        this.verifyingOtp = false;
+        if (res.code === 0 && res.data) {
+          this.stopOtpTimer();
+          this.showOtpModal = false;
+          this.completedTransfer = res.data;
+          this.loadAccounts(); // Refresh balance
+          this.showToast('✅ Xác thực OTP thành công! Giao dịch đã hoàn tất.');
+        }
+      },
+      error: (err) => {
+        this.verifyingOtp = false;
+        this.otpError = err?.error?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn!';
+      }
+    });
+  }
+
+  closeOtpModal(): void {
+    this.stopOtpTimer();
+    this.showOtpModal = false;
+    this.pendingTransferId = null;
+    this.otpInput = '';
+    this.otpError = null;
+  }
+
+  startOtpTimer(): void {
+    this.stopOtpTimer();
+    this.otpCountdown = 120;
+    this.timerInterval = setInterval(() => {
+      if (this.otpCountdown > 0) {
+        this.otpCountdown--;
+      } else {
+        this.stopOtpTimer();
+        this.otpError = 'Mã OTP đã hết hạn 120s, vui lòng tạo lại giao dịch!';
+      }
+    }, 1000);
+  }
+
+  stopOtpTimer(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  resendOtp(): void {
+    this.startOtpTimer();
+    this.otpError = null;
+    this.showToast('Mã OTP mới đã được gửi lại qua SMS!');
+  }
+
 
   resendSameIdempotencyKey(): void {
     if (!this.completedTransfer) return;

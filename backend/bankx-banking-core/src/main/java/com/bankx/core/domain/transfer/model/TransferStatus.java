@@ -10,6 +10,9 @@ public enum TransferStatus {
     /** Đang chờ xử lý */
     PENDING,
 
+    /** Đang chờ nhập mã xác thực OTP (Giao dịch >= 5.000.000 VND) */
+    PENDING_OTP,
+
     /** Đang thực thi giao dịch (Đang gọi Saga / Outbox) */
     PROCESSING,
 

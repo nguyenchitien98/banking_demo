@@ -163,23 +163,23 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 08 — Idempotency)</h4>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 10 — Risk-based OTP)</h4>
         </div>
 
         <div class="panel-body">
           <div class="test-scenario">
-            <span class="scenario-title">1. Chống bấm đúp (Double-Submit Prevention):</span>
-            <p>Mỗi khi bắt đầu tạo lệnh, Angular tự động tạo 1 <code>UUID v4</code> trong Header <code>X-Idempotency-Key</code>.</p>
+            <span class="scenario-title">1. Chuyển tiền &lt; 5.000.000 VND (Không yêu cầu OTP):</span>
+            <p>Nhập số tiền 500,000 ₫ hoặc 1,000,000 ₫. Giao dịch sẽ hạch toán sổ kép và hoàn tất <strong>ngay lập tức</strong>.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">2. Thử nghiệm Gửi trùng Request:</span>
-            <p>Sau khi chuyển tiền thành công, bấm nút <strong>"🔁 Gửi lại với CÙNG Idempotency Key"</strong>. Backend sẽ bắt được key trong Redis và trả về kết quả Cached mà KHÔNG trừ thêm tiền lần 2!</p>
+            <span class="scenario-title">2. Chuyển tiền &ge; 5.000.000 VND (Cần xác thực OTP):</span>
+            <p>Nhập số tiền 5,000,000 ₫. Hệ thống sẽ giữ trạng thái <code>PENDING_OTP</code>, hiển thị Modal xác thực 2 lớp với countdown 120s và gợi ý mã OTP từ Redis.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">3. Khóa đồng thời (Distributed Lock):</span>
-            <p>AOP Aspect <code>&#64;Idempotent</code> dùng lệnh <code>SETNX</code> trên Redis để từ chối các request trùng lắp đang chạy song song.</p>
+            <span class="scenario-title">3. Kiểm tra Idempotency Key (Sprint 08):</span>
+            <p>Bấm nút <strong>"🔁 Gửi lại với CÙNG Idempotency Key"</strong> để kiểm tra Redis Cache response không bị trừ tiền 2 lần.</p>
           </div>
         </div>
       </div>
@@ -214,6 +214,12 @@
               <span class="val amount-val">{{ amount | number:'1.0-0' }} VND</span>
             </div>
             <div class="confirm-row">
+              <span class="label">Yêu cầu OTP</span>
+              <span class="val font-bold" [class.text-danger]="amount >= 5000000" [class.text-success]="amount < 5000000">
+                {{ amount >= 5000000 ? '🔑 Có (Giao dịch ≥ 5M)' : '⚡ Không (Giao dịch nhỏ)' }}
+              </span>
+            </div>
+            <div class="confirm-row">
               <span class="label">Idempotency Key</span>
               <span class="val font-mono text-xs">{{ currentIdempotencyKey }}</span>
             </div>
@@ -230,6 +236,49 @@
     </div>
   }
 
+  <!-- Sprint 10 Risk-based OTP Modal -->
+  @if (showOtpModal) {
+    <div class="modal-overlay">
+      <div class="modal-card otp-modal">
+        <div class="modal-header">
+          <h3>Xác thực Mã OTP An Toàn (Sprint 10)</h3>
+          <button class="close-btn" (click)="closeOtpModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="otp-alert-box">
+            🔒 Giao dịch <strong>{{ amount | number:'1.0-0' }} VND</strong> (&ge; 5.000.000 VND) yêu cầu xác thực OTP 2 lớp.
+          </div>
+
+          @if (mockOtpHint) {
+            <div class="mock-otp-hint">
+              💡 <strong>Mã OTP thử nghiệm (Redis):</strong> <span class="font-mono otp-highlight">{{ mockOtpHint }}</span>
+            </div>
+          }
+
+          <div class="form-group text-center">
+            <label>Nhập mã OTP 6 chữ số vừa gửi qua SMS:</label>
+            <input type="text" [(ngModel)]="otpInput" maxlength="6" class="input-field otp-input-field" placeholder="******" />
+            <div class="otp-timer">
+              ⏱️ Mã có hiệu lực trong: <strong class="text-primary">{{ otpCountdown }}s</strong>
+            </div>
+          </div>
+
+          @if (otpError) {
+            <div class="error-msg text-center">{{ otpError }}</div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="resendOtp()">Gửi lại OTP</button>
+          <button class="btn-primary" (click)="confirmOtp()" [disabled]="verifyingOtp || otpCountdown === 0">
+            {{ verifyingOtp ? 'Đang xác thực...' : 'Xác nhận OTP & Hoàn tất' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- Toast -->
   @if (toastMessage) {
     <div class="toast-notification">
@@ -237,3 +286,4 @@
     </div>
   }
 </div>
+

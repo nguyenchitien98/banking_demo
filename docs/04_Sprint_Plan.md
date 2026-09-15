@@ -237,17 +237,21 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 10: Transfer OTP Integration
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Step-based flow, OTP trong banking context, Risk-based OTP
 
 **Checklist:**
-- `[ ]` Transfer flow thêm OTP bước trước khi execute
-- `[ ]` Risk-based: Transfer < 5M → No OTP; Transfer >= 5M → OTP required
-- `[ ]` `TransferState`: `PENDING_OTP` → `PROCESSING` → `COMPLETED`/`FAILED`
-- `[ ]` Redis: Lưu pending transfer state (TTL 5 phút để user nhập OTP)
-- `[ ]` APIs: `POST /api/transfers` → Response 202 (pending OTP); `POST /api/transfers/{id}/confirm-otp`
-- `[ ]` Angular: Kết nối OTP screen vào Transfer flow
+- `[x]` Transfer flow thêm OTP bước trước khi execute đối với giao dịch rủi ro cao
+- `[x]` Risk-based: Transfer < 5M $\rightarrow$ No OTP (hoàn tất ngay); Transfer >= 5M $\rightarrow$ OTP required (2-layer verification)
+- `[x]` `TransferStatus`: `PENDING_OTP` $\rightarrow$ `PROCESSING` $\rightarrow$ `COMPLETED`/`FAILED`
+- `[x]` Redis: Lưu giữ mã OTP `transfer_otp:{id}` TTL 120s & Đếm sai `transfer_otp_attempts:{id}` TTL 300s
+- `[x]` APIs: `POST /api/v1/transfers/internal` $\rightarrow$ Response 202 Accepted (pending OTP); `POST /api/v1/transfers/{id}/confirm-otp`
+- `[x]` Angular: Kết nối Modal xác thực OTP 6 chữ số vào Transfer flow với đếm ngược 120s, gợi ý mã OTP từ Redis & Panel kiểm thử thủ công
+- `[x]` Test: Giao dịch < 5M thành công trực tiếp, giao dịch >= 5M chờ OTP, OTP chính xác, OTP sai/hết hạn (Maven & Angular Build 100% SUCCESS)
+
+**Kỹ thuật phỏng vấn:** "Phân loại giao dịch rủi ro (Risk-Based Authentication) và xử lý OTP hai bước trong Banking thế nào?"
+
 
 ---
 

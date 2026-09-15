@@ -128,13 +128,15 @@
 
 ---
 
-## 📲 Sprint 10 — Transfer + OTP Integration
+## 📲 Sprint 10 — Transfer + OTP Integration (Risk-based OTP)
 
-- `[ ]` Risk-based OTP: < 5M không cần, >= 5M cần OTP
-- `[ ]` TransferState machine: PENDING_OTP → PROCESSING → COMPLETED
-- `[ ]` Redis: pending transfer state TTL 5m
-- `[ ]` API: POST /transfers (202 Accepted), POST /transfers/:id/confirm-otp
-- `[ ]` Angular: OTP screen trong transfer flow
+- `[x]` Risk-based OTP rule: Giao dịch < 5.000.000 VND hoàn tất ngay lập tức; Giao dịch &ge; 5.000.000 VND yêu cầu xác thực OTP 2 lớp
+- `[x]` State Machine: `PENDING_OTP` $\rightarrow$ `PROCESSING` $\rightarrow$ `COMPLETED` / `FAILED`
+- `[x]` Redis: Lưu giữ trạng thái OTP `transfer_otp:{id}` với TTL 120 giây & Đếm số lần thử `transfer_otp_attempts:{id}`
+- `[x]` APIs: `POST /api/v1/transfers/internal` (Trả về 202 Accepted + `requiresOtp` + `mockOtp` khi &ge; 5M) & `POST /api/v1/transfers/{id}/confirm-otp`
+- `[x]` Angular: `TransferService`, `TransfersPage` kết nối Modal xác thực OTP 6 chữ số với countdown timer 120s, nút gửi lại & Panel kiểm thử thủ công
+- `[x]` Test: Transfer < 5M direct complete, transfer >= 5M pending OTP, valid/invalid OTP, expired OTP (Maven & Angular Build 100% SUCCESS)
+
 
 ---
 

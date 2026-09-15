@@ -33,6 +33,12 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
+import com.bankx.core.infrastructure.sms.SmsSender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import java.time.Duration;
+
 /**
  * Service ứng dụng xử lý các giao dịch Chuyển tiền ngân hàng (Transfer Application Service).
  *
@@ -44,10 +50,10 @@ import org.springframework.retry.annotation.Retryable;
  * </ul>
  * </p>
  *
- * <p><b>So sánh Kiến trúc Concurrency Control (Pessimistic vs Optimistic Locking):</b>
+ * <p><b>So sánh Kiến trúc Concurrency Control & Risk-Based OTP (Sprint 10):</b>
  * <ul>
- *   <li><b>Pessimistic Lock (SELECT FOR UPDATE):</b> Khóa cứng dòng CSDL ở mức DB Engine. Tuyệt đối an toàn nhưng gây nghẽn Connection Pool và giảm TPS nghiêm trọng khi tải cao.</li>
- *   <li><b>Optimistic Lock (@Version - Lựa chọn BankX):</b> Không khóa DB row. Hibernate tự kiểm tra {@code WHERE version = old_version}. Nếu phát hiện phiên bản bị thay đổi đồng thời, Spring ném {@link ObjectOptimisticLockingFailureException} và {@code @Retryable} sẽ tự động reload số dư mới và thử lại 3 lần.</li>
+ *   <li><b>Chuyển tiền thấp hơn 5.000.000 VND:</b> Giao dịch hoàn tất ngay lập tức (No OTP required).</li>
+ *   <li><b>Chuyển tiền từ 5.000.000 VND trở lên:</b> Chuyển sang trạng thái {@code PENDING_OTP}, sinh mã OTP 6 chữ số lưu Redis 120s và chờ người dùng xác thực.</li>
  * </ul>
  * </p>
  *
@@ -57,20 +63,30 @@ import org.springframework.retry.annotation.Retryable;
 @Service
 public class TransferApplicationService {
 
+    private static final Logger log = LoggerFactory.getLogger(TransferApplicationService.class);
+    public static final BigDecimal RISK_THRESHOLD_OTP = new BigDecimal("5000000");
+    public static final long OTP_TTL_SECONDS = 120;
+
     private final BankTransferRepository transferRepository;
     private final TransferLimitRepository limitRepository;
     private final BankAccountRepository accountRepository;
     private final LedgerApplicationService ledgerService;
+    private final StringRedisTemplate redisTemplate;
+    private final SmsSender smsSender;
     private final Random random = new Random();
 
     public TransferApplicationService(BankTransferRepository transferRepository,
                                        TransferLimitRepository limitRepository,
                                        BankAccountRepository accountRepository,
-                                       LedgerApplicationService ledgerService) {
+                                       LedgerApplicationService ledgerService,
+                                       StringRedisTemplate redisTemplate,
+                                       SmsSender smsSender) {
         this.transferRepository = transferRepository;
         this.limitRepository = limitRepository;
         this.accountRepository = accountRepository;
         this.ledgerService = ledgerService;
+        this.redisTemplate = redisTemplate;
+        this.smsSender = smsSender;
     }
 
     /**
@@ -88,14 +104,14 @@ public class TransferApplicationService {
     /**
      * Khởi tạo và thực thi giao dịch Chuyển tiền nội bộ (Internal Bank Transfer).
      *
-     * <p>Tích hợp tự động Thử lại (Retry) tối đa 3 lần nếu xảy ra xung đột Khóa lạc quan (Optimistic Lock @Version).</p>
+     * <p>Tích hợp Risk-based OTP: Giao dịch &ge; 5.000.000 VND yêu cầu nhập mã OTP.</p>
      *
      * @param userId ID người dùng thực hiện chuyển tiền
      * @param sourceAccountId ID tài khoản trích nợ
      * @param targetAccountNumber Số tài khoản thụ hưởng
      * @param amountVal Số tiền chuyển
      * @param description Nội dung chuyển tiền
-     * @return Lệnh chuyển tiền {@link BankTransfer} đã hoàn thành
+     * @return Lệnh chuyển tiền {@link BankTransfer} ở trạng thái COMPLETED hoặc PENDING_OTP
      */
     @Retryable(
             retryFor = { ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class },
@@ -132,6 +148,10 @@ public class TransferApplicationService {
 
         limit.validateTransferLimit(transferAmount, dailyAccumulated);
 
+        // Check if Risk-based OTP is required (amount >= 5,000,000 VND)
+        boolean isHighRisk = amountVal.compareTo(RISK_THRESHOLD_OTP) >= 0;
+        TransferStatus initialStatus = isHighRisk ? TransferStatus.PENDING_OTP : TransferStatus.PROCESSING;
+
         // 4. Create Transfer Domain Record
         String transferCode = generateTransferCode();
         BankTransfer transfer = new BankTransfer(
@@ -145,14 +165,31 @@ public class TransferApplicationService {
                 Money.ZERO, // Miễn phí chuyển tiền nội bộ BankX
                 description != null ? description : "Chuyển tiền nội bộ BankX",
                 TransferType.INTERNAL,
-                TransferStatus.PROCESSING,
+                initialStatus,
                 null,
                 null,
                 Instant.now(),
                 Instant.now()
         );
 
-        // 5. Execute Double-Entry Ledger Transaction & Account Balance Updates
+        if (isHighRisk) {
+            // Lưu record chuyển tiền ở trạng thái PENDING_OTP
+            BankTransfer savedTransfer = transferRepository.save(transfer);
+
+            // Sinh mã OTP 6 chữ số
+            String otpCode = String.valueOf(100000 + random.nextInt(900000));
+            String otpKey = "transfer_otp:" + savedTransfer.getId();
+            redisTemplate.opsForValue().set(otpKey, otpCode, Duration.ofSeconds(OTP_TTL_SECONDS));
+
+            String smsContent = String.format("[BankX] Ma OTP xac thuc giao dich chuyen tien %s VND (%s) la: %s. Hieu luc 2 phut.",
+                    amountVal, transferCode, otpCode);
+            smsSender.sendSms("CUSTOMER_PHONE", smsContent);
+            log.info("Sprint 10 Risk-based OTP generated for transferId [{}] code [{}]: OTP [{}]", savedTransfer.getId(), transferCode, otpCode);
+
+            return savedTransfer;
+        }
+
+        // 5. Nếu < 5M VND: Thực thi hạch toán sổ kép & Cập nhật số dư ngay lập tức
         Transaction tx = ledgerService.recordDoubleEntry(
                 sourceAccountId,
                 targetAccount.getId(),
@@ -164,6 +201,81 @@ public class TransferApplicationService {
         // 6. Mark Transfer COMPLETED
         transfer.markCompleted(tx.getId());
         return transferRepository.save(transfer);
+    }
+
+    /**
+     * Xác thực mã OTP và hoàn tất giao dịch Chuyển tiền.
+     *
+     * @param userId ID người dùng
+     * @param transferId ID lệnh chuyển tiền
+     * @param otpCode Mã OTP 6 chữ số
+     * @return Lệnh chuyển tiền {@link BankTransfer} ở trạng thái COMPLETED
+     */
+    @Retryable(
+            retryFor = { ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
+    @Transactional
+    public BankTransfer confirmTransferOtp(UUID userId, UUID transferId, String otpCode) {
+        BankTransfer transfer = transferRepository.findById(transferId)
+                .orElseThrow(() -> new BankingException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy giao dịch chuyển tiền: " + transferId));
+
+        if (transfer.getStatus() != TransferStatus.PENDING_OTP) {
+            throw new BankingException(ErrorCode.INVALID_REQUEST_PARAMETER, "Giao dịch không ở trạng thái chờ OTP hoặc đã hoàn tất!");
+        }
+
+        String otpKey = "transfer_otp:" + transferId;
+        String attemptsKey = "transfer_otp_attempts:" + transferId;
+
+        String savedOtp = redisTemplate.opsForValue().get(otpKey);
+        if (savedOtp == null) {
+            throw new BankingException(ErrorCode.OTP_INVALID_OR_EXPIRED, "Mã OTP đã hết hạn (quá 120 giây) hoặc không tồn tại. Vui lòng thực hiện lại giao dịch!");
+        }
+
+        String attemptsStr = redisTemplate.opsForValue().get(attemptsKey);
+        int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
+
+        if (!savedOtp.equals(otpCode)) {
+            attempts++;
+            redisTemplate.opsForValue().set(attemptsKey, String.valueOf(attempts), Duration.ofSeconds(300));
+            log.warn("Xác thực OTP chuyển tiền thất bại cho transferId [{}]. Lần sai {}/3", transferId, attempts);
+
+            if (attempts >= 3) {
+                transfer.markFailed("Nhập sai mã OTP quá 3 lần");
+                transferRepository.save(transfer);
+                redisTemplate.delete(otpKey);
+                redisTemplate.delete(attemptsKey);
+                throw new BankingException(ErrorCode.OTP_MAX_ATTEMPTS_EXCEEDED, "Bạn đã nhập sai mã OTP quá 3 lần. Giao dịch bị hủy!");
+            }
+            throw new BankingException(ErrorCode.OTP_INVALID_OR_EXPIRED, "Mã OTP không chính xác. Bạn còn " + (3 - attempts) + " lần thử.");
+        }
+
+        // OTP thành công -> xóa khỏi Redis
+        redisTemplate.delete(otpKey);
+        redisTemplate.delete(attemptsKey);
+
+        // Thực thi hạch toán sổ kép & Cập nhật số dư
+        Transaction tx = ledgerService.recordDoubleEntry(
+                transfer.getSourceAccountId(),
+                transfer.getTargetAccountId(),
+                transfer.getAmount().getAmount(),
+                transfer.getDescription(),
+                TransactionType.INTERNAL_TRANSFER
+        );
+
+        transfer.markCompleted(tx.getId());
+        return transferRepository.save(transfer);
+    }
+
+    /**
+     * Lấy mã OTP giả lập từ Redis (phục vụ hiển thị gợi ý kiểm thử Sprint 10 UI).
+     *
+     * @param transferId ID giao dịch chuyển tiền
+     * @return Mã OTP hoặc null
+     */
+    public String getMockOtpForTransfer(UUID transferId) {
+        return redisTemplate.opsForValue().get("transfer_otp:" + transferId);
     }
 
     /**

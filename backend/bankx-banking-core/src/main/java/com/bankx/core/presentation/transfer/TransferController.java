@@ -6,10 +6,13 @@ import com.bankx.core.application.transfer.TransferApplicationService;
 import com.bankx.core.domain.account.model.BankAccount;
 import com.bankx.core.domain.auth.model.User;
 import com.bankx.core.domain.transfer.model.BankTransfer;
+import com.bankx.core.domain.transfer.model.TransferStatus;
+import com.bankx.core.presentation.transfer.dto.ConfirmTransferOtpRequest;
 import com.bankx.core.presentation.transfer.dto.CreateTransferRequest;
 import com.bankx.core.presentation.transfer.dto.RecipientInquiryResponse;
 import com.bankx.core.presentation.transfer.dto.TransferResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -70,7 +73,7 @@ public class TransferController {
      * @param currentUser Người dùng xác thực hiện tại
      * @param request Payload {@link CreateTransferRequest}
      * @param traceId Header {@code X-Trace-Id}
-     * @return {@link ResponseEntity} chứa {@link TransferResponse}
+     * @return {@link ResponseEntity} chứa {@link TransferResponse} (200 OK nếu < 5M, 202 ACCEPTED nếu >= 5M)
      */
     @Idempotent(headerName = "X-Idempotency-Key", ttlSeconds = 600, message = "Giao dịch trùng lặp hoặc đang được xử lý, vui lòng chờ trong giây lát!")
     @PostMapping("/internal")
@@ -86,9 +89,37 @@ public class TransferController {
                 request.amount(),
                 request.description()
         );
-        TransferResponse response = mapToResponse(transfer);
 
+        if (transfer.getStatus() == TransferStatus.PENDING_OTP) {
+            String mockOtp = transferService.getMockOtpForTransfer(transfer.getId());
+            TransferResponse response = mapToResponseWithOtp(transfer, true, mockOtp);
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(ApiResponse.success("Giao dịch trên 5.000.000 VND yêu cầu xác thực OTP", response, traceId));
+        }
+
+        TransferResponse response = mapToResponse(transfer);
         return ResponseEntity.ok(ApiResponse.success("Chuyển tiền nội bộ thành công", response, traceId));
+    }
+
+    /**
+     * Endpoint xác nhận mã OTP hoàn tất giao dịch chuyển tiền.
+     *
+     * @param currentUser Người dùng xác thực hiện tại
+     * @param id ID lệnh chuyển tiền
+     * @param request Payload {@link ConfirmTransferOtpRequest}
+     * @param traceId Header {@code X-Trace-Id}
+     * @return {@link ResponseEntity} chứa {@link TransferResponse}
+     */
+    @PostMapping("/{id}/confirm-otp")
+    public ResponseEntity<ApiResponse<TransferResponse>> confirmTransferOtp(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable UUID id,
+            @Valid @RequestBody ConfirmTransferOtpRequest request,
+            @RequestHeader(value = "X-Trace-Id", required = false) String traceId
+    ) {
+        BankTransfer transfer = transferService.confirmTransferOtp(currentUser.getId(), id, request.otpCode());
+        TransferResponse response = mapToResponse(transfer);
+        return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công! Giao dịch chuyển tiền đã hoàn tất.", response, traceId));
     }
 
     /**
@@ -132,6 +163,10 @@ public class TransferController {
     }
 
     private TransferResponse mapToResponse(BankTransfer t) {
+        return mapToResponseWithOtp(t, false, null);
+    }
+
+    private TransferResponse mapToResponseWithOtp(BankTransfer t, boolean requiresOtp, String mockOtp) {
         return new TransferResponse(
                 t.getId(),
                 t.getTransferCode(),
@@ -146,7 +181,9 @@ public class TransferController {
                 t.getTransferType().name(),
                 t.getStatus().name(),
                 t.getTransactionId(),
-                t.getCreatedAt()
+                t.getCreatedAt(),
+                requiresOtp,
+                mockOtp
         );
     }
 }
