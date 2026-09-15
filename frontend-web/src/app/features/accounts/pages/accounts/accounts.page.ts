@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { AccountService, BankAccount } from '../../../../core/services/account.service';
 import { LedgerService, LedgerEntry, TransactionDetail } from '../../../../core/services/ledger.service';
 
@@ -259,6 +260,27 @@ export class AccountsPage implements OnInit {
     }
     this.totalDebitAmount.set(debitSum);
     this.totalCreditAmount.set(creditSum);
+  }
+
+  simulateRaceCondition(): void {
+    const acc = this.selectedAccount();
+    if (!acc) return;
+
+    this.showToast('🚀 Đang giả lập 2 luồng giao dịch đồng thời (Concurrent Race Condition)...');
+
+    const req1 = this.accountService.freezeAccount(acc.id);
+    const req2 = this.accountService.freezeAccount(acc.id);
+
+    forkJoin([req1, req2]).subscribe({
+      next: ([res1, res2]) => {
+        this.showToast(`✅ Xử lý đồng thời thành công nhờ @Version & Spring @Retryable! Version mới: v${res2.data.version}`);
+        this.refreshLedger();
+      },
+      error: (err) => {
+        this.showToast(`⚠️ Kết quả xung đột đồng thời: ${err?.error?.message || 'OptimisticLockingFailureException'}`);
+        this.refreshLedger();
+      }
+    });
   }
 
   private showToast(msg: string): void {

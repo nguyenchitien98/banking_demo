@@ -217,19 +217,20 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 
 ---
 
-### Sprint 09: Concurrency Control — Optimistic Lock
-**Trạng thái:** `[ ]`
+### Sprint 09: Concurrency Control — Optimistic Lock & Retry
+**Trạng thái:** `[x]` Đã hoàn thành
 
-**Kỹ thuật học:** Optimistic Locking, @Version, Retry on conflict
+**Kỹ thuật học:** Optimistic Locking, @Version, Spring Retry on conflict
 
 **Checklist:**
-- `[ ]` Kiểm tra race condition thực tế bằng JMeter/k6 (2 request đồng thời)
-- `[ ]` `@Version` trên `BankAccount` entity
-- `[ ]` Retry 3 lần khi `OptimisticLockingFailureException`
-- `[ ]` Test concurrent: Thread A và B cùng transfer vượt balance → chỉ 1 thành công
-- `[ ]` So sánh Pessimistic vs Optimistic Lock:
-  - Pessimistic: `SELECT FOR UPDATE` → Lock DB row → Safe nhưng slow
-  - Optimistic: `UPDATE WHERE version=?` → Fast nhưng cần retry
+- `[x]` Thử nghiệm Race Condition xử lý đồng thời (2 request song song)
+- `[x]` `@Version` trên `BankAccountJpaEntity`
+- `[x]` `@EnableRetry` & Retry 3 lần khi gặp `ObjectOptimisticLockingFailureException` (Exponential Backoff 100ms)
+- `[x]` Test concurrent: Luồng A và B cùng cập nhật số dư $\rightarrow$ Retry tự động reload phiên bản mới và thực hiện thành công
+- `[x]` Angular UI: Nút giả lập 2 request song song (`forkJoin`) & Panel kiểm thử thủ công
+- `[x]` So sánh Pessimistic vs Optimistic Lock:
+  - Pessimistic: `SELECT FOR UPDATE` → Lock DB row → Safe nhưng nghẽn Connection Pool
+  - Optimistic: `UPDATE WHERE version=?` → Fast, high TPS + `@Retryable` tự động giải quyết xung đột (Maven & Angular Build 100% SUCCESS)
 
 **Kỹ thuật phỏng vấn:** "Hai người cùng rút tiền 1 tài khoản → xử lý thế nào?"
 

@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -28,12 +29,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Kích hoạt @Scheduled annotations. Cần thiết cho OutboxPollingService
  * chạy định kỳ mỗi 1 giây để publish Kafka events từ outbox_events table.
  *
+ * <p><b>Tại sao @EnableRetry?</b>
+ * Kích hoạt cơ chế tự động Thử lại (@Retryable) khi gặp OptimisticLockingFailureException
+ * do nhiều luồng giao dịch truy cập số dư tài khoản cùng lúc.
+ *
  * @since Sprint 00
  */
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableKafka
 @EnableScheduling
+@EnableRetry
 public class BankXCoreApplication {
 
     /**

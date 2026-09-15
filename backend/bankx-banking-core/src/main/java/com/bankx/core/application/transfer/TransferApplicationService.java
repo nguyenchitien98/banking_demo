@@ -28,13 +28,26 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+
 /**
- * Service ứng dụng xử lý các giao dịch chuyển tiền ngân hàng (Transfer Application Service).
+ * Service ứng dụng xử lý các giao dịch Chuyển tiền ngân hàng (Transfer Application Service).
  *
  * <p><b>Lý do sử dụng các Annotation:</b>
  * <ul>
  *   <li>{@code @Service}: Đánh dấu Service Bean quản lý các luồng nghiệp vụ chuyển tiền.</li>
  *   <li>{@code @Transactional}: Quản lý giao dịch tài chính toàn vẹn.</li>
+ *   <li>{@code @Retryable}: Tự động thử lại tối đa 3 lần với Exponential Backoff khi phát hiện xung đột Optimistic Lock.</li>
+ * </ul>
+ * </p>
+ *
+ * <p><b>So sánh Kiến trúc Concurrency Control (Pessimistic vs Optimistic Locking):</b>
+ * <ul>
+ *   <li><b>Pessimistic Lock (SELECT FOR UPDATE):</b> Khóa cứng dòng CSDL ở mức DB Engine. Tuyệt đối an toàn nhưng gây nghẽn Connection Pool và giảm TPS nghiêm trọng khi tải cao.</li>
+ *   <li><b>Optimistic Lock (@Version - Lựa chọn BankX):</b> Không khóa DB row. Hibernate tự kiểm tra {@code WHERE version = old_version}. Nếu phát hiện phiên bản bị thay đổi đồng thời, Spring ném {@link ObjectOptimisticLockingFailureException} và {@code @Retryable} sẽ tự động reload số dư mới và thử lại 3 lần.</li>
  * </ul>
  * </p>
  *
@@ -75,13 +88,7 @@ public class TransferApplicationService {
     /**
      * Khởi tạo và thực thi giao dịch Chuyển tiền nội bộ (Internal Bank Transfer).
      *
-     * <p>Chuỗi kiểm tra nghiệp vụ (Validation Chain):
-     * 1. Kiểm tra trạng thái tài khoản trích nợ (Phải là ACTIVE).
-     * 2. Kiểm tra tài khoản thụ hưởng tồn tại và ACTIVE.
-     * 3. Kiểm tra hạn mức giao dịch (Single Limit & Daily Limit).
-     * 4. Gọi {@link LedgerApplicationService} để trích nợ, ghi có và tạo Bút toán sổ kép (Double-Entry).
-     * 5. Lưu bản ghi lệnh chuyển tiền {@link BankTransfer} với mã giao dịch duy nhất.
-     * </p>
+     * <p>Tích hợp tự động Thử lại (Retry) tối đa 3 lần nếu xảy ra xung đột Khóa lạc quan (Optimistic Lock @Version).</p>
      *
      * @param userId ID người dùng thực hiện chuyển tiền
      * @param sourceAccountId ID tài khoản trích nợ
@@ -90,6 +97,11 @@ public class TransferApplicationService {
      * @param description Nội dung chuyển tiền
      * @return Lệnh chuyển tiền {@link BankTransfer} đã hoàn thành
      */
+    @Retryable(
+            retryFor = { ObjectOptimisticLockingFailureException.class, OptimisticLockingFailureException.class },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     @Transactional
     public BankTransfer createInternalTransfer(UUID userId, UUID sourceAccountId, String targetAccountNumber, BigDecimal amountVal, String description) {
         Money transferAmount = Money.of(amountVal, "VND");

@@ -5,9 +5,14 @@
       <h2>Quản lý Tài khoản & Bút toán Ghi sổ (Ledger)</h2>
       <p class="subtitle">Theo dõi số dư và chi tiết bút toán hạch toán kế toán ghi sổ kép (Double-Entry Bookkeeping)</p>
     </div>
-    <button class="btn-primary-sm" (click)="openDoubleEntryModal()">
-      + Thử nghiệm Hạch toán Sổ kép
-    </button>
+    <div class="header-actions">
+      <button class="btn-secondary-sm" (click)="simulateRaceCondition()" title="Thử nghiệm gửi 2 request song song">
+        ⚡ Giả lập Xung đột Đồng thời (Sprint 09)
+      </button>
+      <button class="btn-primary-sm" (click)="openDoubleEntryModal()">
+        + Thử nghiệm Hạch toán Sổ kép
+      </button>
+    </div>
   </div>
 
   <div class="accounts-grid">
@@ -43,23 +48,23 @@
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
-          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 06 — Ledger)</h4>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 09 — Concurrency Control)</h4>
         </div>
 
         <div class="panel-body">
           <div class="test-scenario">
-            <span class="scenario-title">1. Nguyên tắc Kế toán Ghi sổ kép (Double-Entry Invariant):</span>
-            <p>Mỗi giao dịch ngân hàng bắt buộc sinh ra 1 cặp bút toán <code>DEBIT</code> (Ghi Nợ) và <code>CREDIT</code> (Ghi Có). Kiểm tra đẳng thức: <code>SUM(DEBIT) == SUM(CREDIT)</code>.</p>
+            <span class="scenario-title">1. Khóa Lạc Quan (Optimistic Lock &#64;Version):</span>
+            <p>Mỗi lần cập nhật số dư, Hibernate kiểm tra <code>WHERE version = old_version</code>. Nếu phát hiện thay đổi đồng thời, Spring ném <code>ObjectOptimisticLockingFailureException</code>.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">2. Tính Bất biến của Bản ghi Tài chính (Immutability):</span>
-            <p>Bảng <code>transactions</code> và <code>ledger_entries</code> không có cột <code>updated_at</code> hay <code>deleted_at</code> để đảm bảo không thể chỉnh sửa hoặc xóa lịch sử tài chính.</p>
+            <span class="scenario-title">2. Tự động Thử lại (Spring &#64;Retryable):</span>
+            <p>Hệ thống tự động thử lại tối đa 3 lần với Exponential Backoff (100ms, 200ms) để reload số dư mới mà không gây lỗi cho người dùng.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">3. Thực hành kiểm thử trên UI:</span>
-            <p>Bấm nút <strong>"+ Thử nghiệm Hạch toán Sổ kép"</strong> để chọn tài khoản Nợ & Có và thực hiện giao dịch ghi sổ trực tiếp.</p>
+            <span class="scenario-title">3. Kiểm thử nút trên UI:</span>
+            <p>Bấm <strong>"⚡ Giả lập Xung đột Đồng thời"</strong> để phát 2 request song song và quan sát giá trị <code>v&#123;version&#125;</code> của tài khoản tăng tự động.</p>
           </div>
         </div>
       </div>

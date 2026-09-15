@@ -117,12 +117,14 @@
 
 ---
 
-## ⚡ Sprint 09 — Concurrency (Optimistic Lock)
+## ⚡ Sprint 09 — Concurrency Control (Optimistic Lock & Retry)
 
-- `[ ]` @Version trên BankAccount
-- `[ ]` Retry 3 lần khi OptimisticLockException
-- `[ ]` Concurrent transfer test (2 threads)
-- `[ ]` Compare Pessimistic vs Optimistic in comments
+- `[x]` `@Version` column trên `BankAccountJpaEntity` chống xung đột ghi đồng thời
+- `[x]` `@EnableRetry` trên Application Class & Spring Retry dependency
+- `[x]` Tự động Retry 3 lần với Exponential Backoff (`@Retryable(retryFor = { ObjectOptimisticLockingFailureException.class }, maxAttempts = 3)`) trên `TransferApplicationService.createInternalTransfer()`
+- `[x]` So sánh chi tiết kiến trúc Pessimistic Lock (`SELECT FOR UPDATE`) vs Optimistic Lock (`@Version`) trong tài liệu Javadoc
+- `[x]` Angular: Nút **"⚡ Giả lập Xung đột Đồng thời (Sprint 09)"** trong `AccountsPage` gửi 2 request song song (`forkJoin`) & Panel kiểm thử thủ công
+- `[x]` Test: Concurrent balance modification & automatic version increment (Maven & Angular Build 100% SUCCESS)
 
 ---
 

@@ -168,6 +168,12 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- Spring Retry — Tự động Thử lại khi gặp OptimisticLockingFailureException -->
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency>
+
         <!-- ================================================================
              TEST DEPENDENCIES
              ================================================================ -->
