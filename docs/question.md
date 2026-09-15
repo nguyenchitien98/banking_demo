@@ -8,6 +8,7 @@
 
 ## 📋 Mục Lục
 
+**Chủ đề cốt lõi:**
 1. [Saga & Outbox Pattern](#1-saga--outbox-pattern)
 2. [Transactional Outbox Pattern](#2-transactional-outbox-pattern)
 3. [Idempotency & Duplicate Transfer](#3-idempotency--duplicate-transfer)
@@ -26,6 +27,16 @@
 16. [Database & Flyway](#16-database--flyway)
 17. [Redis & Caching Strategy](#17-redis--caching-strategy)
 18. [API Design & Gateway](#18-api-design--gateway)
+
+**Chủ đề nâng cao (mới thêm):**
+
+19. [gRPC & Protobuf trong Banking](#19-grpc--protobuf-trong-banking)
+20. [Database Optimization — Bảng Tỷ Record](#20-database-optimization--bảng-tỷ-record)
+21. [Security & OWASP Top 10](#21-security--owasp-top-10-trong-banking)
+22. [Testing Strategy](#22-testing-strategy-trong-banking)
+23. [Microservices & Deployment Patterns](#23-microservices--deployment-patterns)
+24. [Câu Hỏi Mẹo & Bẫy — @Transactional, N+1, Memory Leak...](#24-câu-hỏi-mẹo--bẫy-tricky-questions)
+25. [Scalability & System Design — 100K TPS, Rate Limiting, Kafka HA](#25-scalability--system-design)
 
 ---
 
@@ -615,4 +626,925 @@ traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 
 ---
 
-*Tài liệu được tổng hợp từ toàn bộ kiến trúc và code thực tế của Titan BankX Digital Banking Platform (27 Sprints).*
+## 19. gRPC & Protobuf trong Banking
+
+---
+
+### ❓ Dự án banking có nên dùng gRPC/Protobuf không?
+
+**Tại sao KHÔNG dùng gRPC cho mọi thứ:**
+- gRPC không thể gọi trực tiếp từ browser (Angular) — phải có grpc-web proxy ở giữa, tăng thêm infrastructure layer.
+- Tooling debug khó hơn REST (không thể Postman/curl đơn giản, Protobuf binary không readable).
+- Team cần học thêm Proto schema language, `protoc` compiler, generated stub code.
+- Swagger/OpenAPI tự động không apply được — documentation phức tạp hơn.
+- Với BankX (monolith, 1 team, local deploy): REST + JSON là đủ, gRPC là Over-Engineering.
+
+**Tại sao NÊN cân nhắc gRPC trong đúng ngữ cảnh:**
+- **Service-to-Service Internal Communication (Microservices):** Khi Account Service gọi sang Notification Service, Fraud Service gọi sang Rule Engine — gRPC mang lại:
+  - Binary Protocol (Protobuf): Nhỏ hơn JSON 3-10 lần → Giảm bandwidth đáng kể ở mức high TPS.
+  - Strongly typed contracts: `.proto` file là interface contract — cả 2 team phải tuân thủ → ít breaking changes.
+  - HTTP/2 multiplexing: Nhiều request trên 1 connection → giảm TCP handshake overhead.
+  - Bi-directional streaming: Phù hợp cho real-time feeds (account balance stream, fraud alert stream).
+- **Kết luận thực tế:** Banking Core nên dùng REST cho External API (Angular, 3rd party) + gRPC cho Internal Service-to-Service. Đây là pattern của Google Pay, Stripe, Revolut.
+
+---
+
+### ❓ Protobuf schema versioning trong banking — làm thế nào để không breaking change?
+
+**Tại sao KHÔNG xóa hay đổi số thứ tự field trong .proto:**
+- Trong Protobuf, field number (không phải tên) là định danh thực sự khi serialize/deserialize.
+- Xóa field number 3 → Producer cũ vẫn gửi field 3 → Consumer mới đọc unknown field → Silently ignored (tốt) HOẶC parse error (tệ).
+- Đổi type của field (từ int32 sang string) → Wire format không tương thích → Runtime crash.
+
+**Tại sao NÊN áp dụng Backward/Forward Compatibility rules:**
+```protobuf
+// Phiên bản 1:
+message Transfer {
+  string id = 1;
+  int64 amount = 2;
+  string from_account = 3;
+}
+
+// Phiên bản 2 — SAFE changes:
+message Transfer {
+  string id = 1;
+  int64 amount = 2;
+  string from_account = 3;
+  // Thêm field MỚI → Backward compatible
+  optional string description = 4;
+  // KHÔNG BAO GIỜ tái dụng lại số 3 nếu đã xóa
+  reserved 5, 6;         // Đặt reserved để tránh tương lai ai dùng nhầm
+  reserved "old_field";  // Reserved cả tên
+}
+```
+- Rule: **Chỉ ADD mới, không DELETE, không RENAME, không đổi type.**
+
+---
+
+### ❓ gRPC vs REST vs Kafka — khi nào dùng cái nào trong hệ thống banking?
+
+| Tình huống | Lựa Chọn | Lý do |
+|---|---|---|
+| Angular → Backend API | **REST/JSON** | Browser native, dễ debug, OpenAPI |
+| Backend → Backend sync call | **gRPC** | Low latency, type-safe, binary |
+| Backend → Backend async event | **Kafka** | Decoupling, persistence, replay |
+| Backend → Banking Partner (NAPAS) | **SOAP/REST** | Partner dictates protocol |
+| Mobile → Backend | **REST** | Firewall-friendly, native HTTP |
+| Admin Portal → Metrics | **WebSocket** | Real-time bidirectional stream |
+| Internal batch reconciliation | **gRPC streaming** | High throughput, backpressure |
+
+---
+
+## 20. Database Optimization — Bảng Tỷ Record
+
+---
+
+### ❓ Nếu bảng `ledger_entries` có tỷ record, em tối ưu query như thế nào?
+
+**Tại sao KHÔNG chỉ thêm index đơn giản:**
+- Bảng tỷ record: Index B-Tree chuẩn vẫn hữu ích nhưng không đủ. VACUUM, ANALYZE, AUTOVACUUM cần được tune riêng. Index rebuild tốn hàng giờ.
+
+**Chiến lược tối ưu theo tầng (Layer-by-Layer):**
+
+**Tầng 1 — Index Design:**
+```sql
+-- Index kép cho query phổ biến nhất: lọc theo account + sắp xếp theo thời gian
+CREATE INDEX CONCURRENTLY idx_ledger_account_created
+  ON ledger_entries (account_id, created_at DESC)
+  WHERE status = 'POSTED'; -- Partial index: chỉ index POSTED entries
+
+-- CONCURRENTLY: Tạo index không lock table (critical cho production)
+
+-- Index cho cursor pagination
+CREATE INDEX CONCURRENTLY idx_ledger_id_desc
+  ON ledger_entries (id DESC); -- Covering index cho cursor-based pagination
+```
+
+**Tầng 2 — Table Partitioning (quan trọng nhất với tỷ record):**
+```sql
+-- Range Partitioning theo tháng
+CREATE TABLE ledger_entries (
+  id          BIGSERIAL,
+  account_id  UUID NOT NULL,
+  amount      DECIMAL(19,4),
+  entry_type  VARCHAR(10),
+  created_at  TIMESTAMPTZ NOT NULL,
+  -- ...
+) PARTITION BY RANGE (created_at);
+
+-- Tạo partition từng tháng (tự động qua script/cron)
+CREATE TABLE ledger_entries_2026_09
+  PARTITION OF ledger_entries
+  FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+
+CREATE TABLE ledger_entries_2026_10
+  PARTITION OF ledger_entries
+  FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+
+-- Lợi ích:
+-- Query WHERE created_at >= '2026-09-01' → Chỉ scan 1 partition nhỏ
+-- DROP cả partition cũ (quý trước) → nhanh hơn DELETE hàng triệu lần
+-- VACUUM chạy per-partition → ít overhead hơn
+```
+
+**Tầng 3 — Archiving & Cold Storage:**
+```sql
+-- Dữ liệu > 1 năm → Move sang bảng archive (S3 + Parquet hoặc read-only replica)
+-- ledger_entries_archive: Chỉ dùng cho audit/reporting, không query realtime
+-- Giữ ledger_entries chỉ chứa 12 tháng gần nhất → Query nhanh hơn nhiều
+```
+
+**Tầng 4 — CQRS Read Model:**
+- `ledger_entries` là write-optimized (ACID, normalized).
+- Tạo `account_monthly_summary` (denormalized): Tổng DEBIT/CREDIT theo tháng, số dư cuối tháng.
+- Dashboard query → Read từ summary table (hàng triệu) thay vì scan ledger (tỷ records).
+
+---
+
+### ❓ `EXPLAIN ANALYZE` cho thấy Seq Scan dù đã có index — tại sao?
+
+**Các nguyên nhân phổ biến:**
+
+**Nguyên nhân 1: Query không dùng được index**
+```sql
+-- ❌ Function wrap làm index vô hiệu:
+WHERE EXTRACT(YEAR FROM created_at) = 2026
+-- PostgreSQL không thể dùng index trên created_at vì có EXTRACT()
+
+-- ✅ Viết lại:
+WHERE created_at >= '2026-01-01' AND created_at < '2027-01-01'
+-- Bây giờ PostgreSQL dùng index range scan
+```
+
+**Nguyên nhân 2: Statistics lỗi thời**
+```sql
+-- Chạy sau khi load lượng lớn data:
+ANALYZE ledger_entries;
+-- Hoặc:
+VACUUM ANALYZE ledger_entries;
+-- PostgreSQL Query Planner dùng statistics để quyết định plan — stats cũ → plan sai
+```
+
+**Nguyên nhân 3: Cardinality quá thấp**
+- Nếu 90% rows có `status = 'POSTED'`, query `WHERE status = 'POSTED'` → PostgreSQL chọn Seq Scan vì rẻ hơn Index Scan + heap fetch ngẫu nhiên.
+- Giải pháp: Dùng Partial Index chỉ index `status = 'PENDING'` (minority).
+
+**Nguyên nhân 4: `pg_stats` correlation thấp**
+- Nếu data được insert theo thứ tự ngẫu nhiên, Heap fetch sau Index Scan là random I/O.
+- Giải pháp: `CLUSTER ledger_entries USING idx_ledger_account_created;` — Sắp xếp lại physical data theo index. Chạy offline.
+
+---
+
+### ❓ Database Sharding là gì? BankX có cần không?
+
+**Tại sao KHÔNG cần Sharding ngay:**
+- Sharding (chia data ra nhiều DB nodes dựa trên shard key) giải quyết write scalability khi 1 PostgreSQL không đủ.
+- Vertical Scaling (RAM, CPU, NVMe SSD): PostgreSQL với 128GB RAM + NVMe có thể xử lý hàng trăm triệu rows tốt hơn nhiều người nghĩ.
+- Partitioning + Read Replica thường đủ cho banking tier đến ~10 tỷ records.
+- Sharding tăng complexity: Cross-shard transaction (Distributed Transaction = SAGA), Join giữa shards không thể, shard rebalancing khó.
+
+**Tại sao NÊN biết Sharding khi thực sự cần:**
+- **Shard Key Design là critical:** Shard theo `customer_id` → Mọi giao dịch của cùng customer ở cùng shard → Cross-shard transaction ít hơn.
+- **Consistent Hashing:** Khi thêm shard mới, chỉ cần migrate ~1/N data thay vì rehash tất cả.
+- **Vitess (YouTube's MySQL sharding layer) hoặc Citus (PostgreSQL sharding):** Không cần tự implement sharding logic.
+- BankX quy mô: Partitioning đã đủ. Sharding chỉ khi > 100 tỷ records hoặc write TPS > 100K.
+
+---
+
+### ❓ Nếu có query lấy "Top 10 tài khoản có số dư lớn nhất" trên bảng 100 triệu records — tối ưu thế nào?
+
+**Ngây thơ:**
+```sql
+SELECT account_id, balance FROM bank_accounts
+ORDER BY balance DESC LIMIT 10;
+-- Full sort 100 triệu rows → Rất chậm nếu không có index
+```
+
+**Tối ưu Tầng 1 — Index:**
+```sql
+CREATE INDEX idx_accounts_balance_desc ON bank_accounts (balance DESC);
+-- PostgreSQL dùng Index Scan → Lấy 10 records đầu ngay, không cần sort
+-- COST: O(1) thay vì O(N log N)
+```
+
+**Tối ưu Tầng 2 — Materialized View (nếu query chạy thường xuyên):**
+```sql
+-- Tính sẵn, refresh mỗi giờ:
+CREATE MATERIALIZED VIEW top_balance_accounts AS
+  SELECT account_id, balance, updated_at
+  FROM bank_accounts
+  ORDER BY balance DESC
+  LIMIT 100;
+
+CREATE UNIQUE INDEX ON top_balance_accounts (account_id);
+
+-- Refresh (non-blocking với CONCURRENTLY):
+REFRESH MATERIALIZED VIEW CONCURRENTLY top_balance_accounts;
+
+-- Query Materialized View → Instant (100 rows, không cần scan)
+SELECT * FROM top_balance_accounts LIMIT 10;
+```
+
+**Tối ưu Tầng 3 — Cache Redis:**
+- Kết quả top 10 → Cache Redis TTL 1 giờ → Dashboard query không hit DB.
+
+---
+
+### ❓ N+1 Query Problem là gì? Trong JPA/Hibernate xảy ra thế nào?
+
+**Mô tả vấn đề:**
+```java
+// Lấy 100 tài khoản → 1 query
+List<BankAccount> accounts = accountRepo.findAll(); // Query 1
+
+for (BankAccount acc : accounts) {
+  // Mỗi tài khoản lại query để lấy owner → 100 queries riêng lẻ!
+  Customer owner = acc.getCustomer(); // Lazy loading = Query N (100 lần)
+  System.out.println(owner.getName());
+}
+// Tổng: 1 + 100 = 101 queries thay vì 1 query với JOIN
+```
+
+**Giải pháp trong BankX:**
+```java
+// Solution 1: JPQL JOIN FETCH
+@Query("SELECT a FROM BankAccount a JOIN FETCH a.customer WHERE a.status = 'ACTIVE'")
+List<BankAccount> findAllWithCustomer();
+// 1 query với JOIN thay vì N+1
+
+// Solution 2: @EntityGraph (declarative)
+@EntityGraph(attributePaths = {"customer", "customer.kycDocuments"})
+List<BankAccount> findByStatus(String status);
+
+// Solution 3: @BatchSize (khi không muốn EAGER load tất cả)
+@BatchSize(size = 50)
+@OneToMany(fetch = FetchType.LAZY)
+private List<LedgerEntry> entries;
+// Thay vì N queries → ceil(N/50) queries — Batch loading
+
+// Detection: spring.jpa.show-sql=true + đếm queries trong log
+// Tool: Hibernate Statistics, datasource-proxy library
+```
+
+---
+
+## 21. Security & OWASP Top 10 trong Banking
+
+---
+
+### ❓ SQL Injection trong banking — tại sao JPA không đủ?
+
+**Tại sao KHÔNG chỉ tin tưởng JPA là safe:**
+- JPA/JPQL với parameters an toàn. NHƯNG nhiều developer "raw native query":
+```java
+// ❌ NGUY HIỂM — String concatenation trong native query:
+@Query(value = "SELECT * FROM accounts WHERE account_number = '" + accountNumber + "'",
+       nativeQuery = true)
+// accountNumber = "'; DROP TABLE accounts; --" → SQL Injection!
+```
+
+**Tại sao NÊN áp dụng nhiều lớp:**
+```java
+// ✅ Parameterized query — luôn dùng ?1 hoặc :param:
+@Query(value = "SELECT * FROM accounts WHERE account_number = :accountNum",
+       nativeQuery = true)
+BankAccount findByNumber(@Param("accountNum") String accountNum);
+
+// Validation layer — Spring Validation trên DTO:
+@Pattern(regexp = "^[0-9]{10,14}$", message = "Số tài khoản chỉ chứa 10-14 chữ số")
+private String accountNumber;
+// Reject bất kỳ input không phải số → SQL injection không có cơ hội
+
+// Principle of Least Privilege — DB user chỉ có SELECT/INSERT/UPDATE
+-- Không có DROP, CREATE, TRUNCATE quyền cho application user
+```
+
+---
+
+### ❓ Mass Assignment Attack là gì? JPA Entity vs DTO giải quyết thế nào?
+
+**Vấn đề:**
+```java
+// ❌ Nhận JPA Entity trực tiếp từ request body:
+@PostMapping("/accounts")
+public ResponseEntity<?> create(@RequestBody BankAccountJpaEntity account) {
+  // User có thể gửi: {"accountNumber": "...", "balance": 9999999, "status": "ADMIN"}
+  // Hibernate save nguyên object → User tự set balance và role!
+}
+```
+
+**Giải pháp với DTO:**
+```java
+// ✅ Chỉ accept DTO với field được whitelist:
+public record CreateAccountRequest(
+  @NotBlank String accountName      // Chỉ user được set tên
+  // balance, status, version, customerId → KHÔNG có trong DTO
+  // Backend tự set theo business logic
+) {}
+
+@PostMapping("/accounts")
+public ResponseEntity<?> create(@RequestBody @Valid CreateAccountRequest req) {
+  BankAccount account = new BankAccount();
+  account.setAccountName(req.accountName());
+  account.setBalance(BigDecimal.ZERO);   // Backend set, không từ user
+  account.setStatus("ACTIVE");            // Backend set
+}
+```
+
+---
+
+### ❓ IDOR (Insecure Direct Object Reference) trong banking — ví dụ và phòng tránh?
+
+**Ví dụ tấn công:**
+```
+User A (customerId: cust-001) có account: acc-001
+URL: GET /api/v1/accounts/acc-002/ledger-entries
+→ Nếu chỉ check accountId mà không check ownership → User A thấy ledger của User B!
+```
+
+**Phòng tránh trong BankX:**
+```java
+// AccountService — luôn check ownership:
+public List<LedgerEntry> getLedgerEntries(String accountId, String currentUserId) {
+  BankAccount account = accountRepo.findById(accountId)
+    .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+  // QUAN TRỌNG: Verify ownership
+  if (!account.getCustomerId().equals(currentUserId)) {
+    throw new AccessDeniedException("Bạn không có quyền xem tài khoản này");
+    // Trả về 403, không 404 → Không leak thông tin tài khoản tồn tại hay không
+  }
+
+  return ledgerRepo.findByAccountId(accountId);
+}
+
+// Hoặc dùng Spring Security @PreAuthorize:
+@PreAuthorize("@accountSecurityService.isOwner(#accountId, authentication.name)")
+public List<LedgerEntry> getLedgerEntries(@PathVariable String accountId) { ... }
+```
+
+---
+
+### ❓ XSS (Cross-Site Scripting) Attack trong Angular Banking App — tại sao Angular an toàn hơn?
+
+**Angular có built-in XSS protection:**
+```typescript
+// Angular AUTO-ESCAPE tất cả interpolation:
+// Nếu user gửi: username = "<script>alert('XSS')</script>"
+
+// Template:
+<span>{{ username }}</span>
+// Angular render ra: <span>&lt;script&gt;alert('XSS')&lt;/script&gt;</span>
+// → Text hiển thị, không execute script
+
+// ❌ Cách nguy hiểm (bypass sanitization):
+<div [innerHTML]="userContent"></div>
+// Nếu userContent chứa script → XSS! Angular sẽ WARN trong console.
+
+// ✅ Khi cần render HTML từ trusted source:
+import { DomSanitizer } from '@angular/platform-browser';
+const sanitized = this.sanitizer.bypassSecurityTrustHtml(trustedContent);
+// Chỉ dùng khi thực sự tin tưởng source
+```
+
+---
+
+### ❓ CSRF Attack trong Spring + Angular — tại sao REST API không cần CSRF token?
+
+**Tại sao REST API + JWT không cần CSRF:**
+- CSRF exploit the browser's automatic cookie sending.
+- Nếu auth dùng **JWT trong Authorization header** (không phải Cookie) → Browser không tự động gửi header → Attacker không thể forge authenticated request.
+- `localStorage.getItem('token')` → JavaScript của attacker page không thể đọc từ domain khác (Same-Origin Policy).
+
+**Nhưng nếu dùng HttpOnly Cookie cho JWT:**
+```java
+// Spring Security config:
+http.csrf(csrf -> csrf
+  .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+  // Angular đọc XSRF-TOKEN cookie → gửi X-XSRF-TOKEN header
+);
+
+// application.yml:
+# Nếu vẫn muốn CSRF protection với Cookie-based auth
+spring.security.csrf.enabled: true
+```
+
+---
+
+## 22. Testing Strategy trong Banking
+
+---
+
+### ❓ Tại sao viết Unit Test cho Service Layer mà không phải cho Controller Layer?
+
+**Tại sao KHÔNG tập trung test Controller:**
+- Controller chỉ là thin layer: Nhận HTTP request → gọi Service → serialize response. Logic gần như không có → Testing không mang lại nhiều giá trị.
+- Integration test (MockMvc) cho Controller có ý nghĩa hơn Unit Test.
+
+**Tại sao NÊN tập trung Unit Test ở Service + Domain:**
+```java
+// LedgerService Unit Test — Test business rule "Double-Entry phải cân bằng":
+@Test
+void recordDoubleEntry_shouldThrow_whenDebitDoesNotEqualCredit() {
+  // Arrange
+  DoubleEntryCommand cmd = new DoubleEntryCommand(
+    "acc-001", "acc-002",
+    new BigDecimal("1000.00"),
+    new BigDecimal("999.99")  // Cố tình sai số
+  );
+
+  // Act & Assert
+  assertThrows(LedgerImbalanceException.class,
+    () -> ledgerService.recordDoubleEntry(cmd));
+}
+
+// Dùng Mockito để mock dependencies:
+@ExtendWith(MockitoExtension.class)
+class LedgerServiceTest {
+  @Mock
+  private LedgerEntryRepository ledgerRepo;
+
+  @InjectMocks
+  private LedgerService ledgerService;
+  // Service được test với mocked repository — không cần DB thật
+}
+```
+
+---
+
+### ❓ Integration Test với Testcontainers — tại sao không dùng H2 in-memory?
+
+**Tại sao KHÔNG dùng H2:**
+- H2 không hoàn toàn tương thích PostgreSQL: Một số PostgreSQL-specific feature (Partial Index, `ON CONFLICT`, native functions) không work trên H2.
+- Bugs chỉ xuất hiện trên production (PostgreSQL) mà không bắt được trên H2 test.
+- Flyway migration scripts PostgreSQL-specific có thể fail trên H2.
+
+**Tại sao NÊN dùng Testcontainers:**
+```java
+@SpringBootTest
+@Testcontainers
+class TransferServiceIntegrationTest {
+
+  @Container
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+    .withDatabaseName("bankx_test")
+    .withUsername("test")
+    .withPassword("test");
+  // Chạy PostgreSQL thật trong Docker container — tự động start/stop
+
+  @DynamicPropertySource
+  static void configureProperties(DynamicPropertyRegistry registry) {
+    registry.add("spring.datasource.url", postgres::getJdbcUrl);
+    registry.add("spring.datasource.username", postgres::getUsername);
+    registry.add("spring.datasource.password", postgres::getPassword);
+  }
+
+  @Test
+  void internalTransfer_shouldDebitAndCreditCorrectly() {
+    // Test với PostgreSQL thật → Bắt được bug PostgreSQL-specific
+    // Flyway migration cũng chạy thật
+  }
+}
+```
+
+---
+
+### ❓ Contract Testing (Pact) là gì? Khi nào cần trong banking?
+
+**Tại sao KHÔNG chỉ dùng Mock responses:**
+- Mock server tự tạo có thể không đồng bộ với API thật của partner (NAPAS, external bank).
+- Khi partner thay đổi response format → Mock vẫn pass → Production fail.
+
+**Tại sao NÊN dùng Consumer-Driven Contract Testing (Pact):**
+```java
+// Consumer (BankX) định nghĩa expectations:
+// "Tôi expect khi gọi GET /napas/accounts/{id} → nhận JSON có field 'accountHolder'"
+
+// Pact verify rằng Provider (NAPAS Stub) thỏa mãn contract đó.
+// Khi NAPAS thay đổi API → Pact Contract test fail ngay trong CI/CD
+// → Phát hiện breaking change trước khi deploy production
+```
+
+---
+
+## 23. Microservices & Deployment Patterns
+
+---
+
+### ❓ Blue-Green Deployment khác với Rolling Deployment thế nào trong banking?
+
+**Blue-Green Deployment:**
+```
+Blue (v1.0) đang chạy: 100% traffic
+Deploy Green (v1.1)  → Test kỹ → Switch traffic 0% → 100% sang Green ngay lập tức
+                                                        ↑ Zero downtime
+
+Rollback: Switch traffic ngay về Blue trong vài giây → Không cần redeploy
+```
+
+**Rolling Deployment:**
+```
+Instance 1: v1.0 → v1.1 (upgrade dần)
+Instance 2: v1.0 → v1.1
+Instance 3: v1.0 → v1.1
+Rollback: Phải deploy lại v1.0 → Tốn thời gian hơn
+```
+
+**Canary Deployment:**
+```
+95% traffic → v1.0 (stable)
+5%  traffic → v1.1 (canary — chỉ nhóm nhỏ user dùng trước)
+Monitor errors/latency → Nếu OK → Tăng dần lên 100%
+→ Giảm risk nhất, nhưng phức tạp nhất
+```
+
+**Banking thường dùng:** Blue-Green vì rollback instant khi có critical bug ảnh hưởng tiền bạc.
+
+---
+
+### ❓ Database Migration trong Zero-Downtime Deployment — làm thế nào?
+
+**Vấn đề:** Deploy mới yêu cầu đổi schema DB → Nhưng không thể down DB khi đang có giao dịch
+
+**Pattern: Expand-Contract (phải làm 3 deploy):**
+
+```sql
+-- Deploy 1: EXPAND — Thêm column mới (backward compatible)
+ALTER TABLE bank_transfers ADD COLUMN fee_amount DECIMAL(19,4) DEFAULT 0;
+-- Column mới, nullable/default → App v1 vẫn chạy bình thường
+
+-- Code Deploy v2: Viết vào cả column cũ lẫn mới
+-- Đọc từ column mới nếu có, fallback column cũ
+
+-- Deploy 2: Backfill data
+UPDATE bank_transfers SET fee_amount = amount * 0.001 WHERE fee_amount = 0;
+-- Chạy background job, không lock table
+
+-- Deploy 3: CONTRACT — Remove column cũ (sau khi v2 stable)
+ALTER TABLE bank_transfers DROP COLUMN old_column;
+```
+
+**Flyway áp dụng:**
+- Migration được Flyway track version → Chạy tự động khi app start.
+- `CONCURRENTLY` index creation không lock table.
+- Tuyệt đối không `DROP COLUMN` trong cùng deploy với feature code sử dụng column mới.
+
+---
+
+### ❓ Health Check endpoint `/actuator/health` trả về gì? Tại sao quan trọng?
+
+```java
+// BankX application.yml:
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: when_authorized  # Ẩn details với anonymous user
+
+// Response của /actuator/health:
+{
+  "status": "UP",  // UP, DOWN, OUT_OF_SERVICE, UNKNOWN
+  "components": {
+    "db": {
+      "status": "UP",
+      "details": { "database": "PostgreSQL", "result": 1 }
+    },
+    "redis": {
+      "status": "UP",
+      "details": { "version": "7.2.0" }
+    },
+    "kafka": {
+      "status": "UP",
+      "details": { "clusterId": "abc123" }
+    },
+    "diskSpace": {
+      "status": "UP",
+      "details": { "free": "50GB" }
+    }
+  }
+}
+```
+
+**Tại sao quan trọng:**
+- **Kubernetes Liveness Probe:** K8s gọi `/health` mỗi 30s. Status `DOWN` → K8s restart container.
+- **Kubernetes Readiness Probe:** `/health/readiness` → K8s chỉ route traffic khi `UP`. App đang warmup/migration → Readiness DOWN → Không nhận request.
+- **Load Balancer:** HAProxy/Nginx gọi health check → Remove unhealthy instance khỏi pool.
+- **Alert:** PagerDuty/OpsGenie monitor health endpoint → Alert on-call engineer khi `DOWN`.
+
+---
+
+## 24. Câu Hỏi Mẹo & Bẫy (Tricky Questions)
+
+---
+
+### ❓ `@Transactional` có hoạt động khi gọi method trong cùng class không?
+
+**Tại sao KHÔNG (self-invocation problem):**
+```java
+@Service
+public class TransferService {
+
+  // Phương thức A — KHÔNG @Transactional
+  public void processTransfer(Transfer t) {
+    this.executeWithRetry(t); // ← Gọi method B trong CÙNG class
+  }
+
+  @Transactional  // ← Transaction này SẼ KHÔNG ĐƯỢC APPLY!
+  public void executeWithRetry(Transfer t) {
+    // Spring AOP proxy không intercept self-invocation
+    // → @Transactional bị bỏ qua hoàn toàn
+  }
+}
+```
+
+**Tại sao xảy ra:**
+- Spring `@Transactional` hoạt động qua AOP Proxy. Khi A gọi B trong cùng class → gọi trực tiếp `this.B()` không qua proxy → Aspect không chạy.
+
+**Giải pháp:**
+```java
+// Solution 1: Tách ra service riêng
+@Service
+public class TransferRetryService {
+  @Transactional
+  public void executeWithRetry(Transfer t) { ... }
+}
+
+// Solution 2: Self-inject (không đẹp nhưng hoạt động)
+@Service
+public class TransferService {
+  @Autowired
+  private TransferService self; // Inject chính mình qua Spring proxy
+
+  public void processTransfer(Transfer t) {
+    self.executeWithRetry(t); // Qua proxy → @Transactional hoạt động
+  }
+}
+
+// Solution 3: Dùng ApplicationContext.getBean() (tương tự)
+```
+
+---
+
+### ❓ `@Transactional(readOnly = true)` làm gì khác biệt?
+
+**Tại sao NÊN dùng `readOnly = true` cho query methods:**
+```java
+@Transactional(readOnly = true)
+public List<BankAccount> getMyAccounts(String customerId) {
+  return accountRepo.findByCustomerId(customerId);
+}
+// Tại sao tốt hơn?
+// 1. Hibernate tắt dirty checking → Không track thay đổi entity → Tiết kiệm memory + CPU
+// 2. PostgreSQL nhận hint "read-only transaction" → Route sang Read Replica nếu có
+// 3. Tránh accidental write: Nếu code trong method có save() → Exception ngay
+// 4. Performance improvement ~30% với large object graphs
+```
+
+---
+
+### ❓ `Optional.get()` không an toàn — tại sao và cách thay thế?
+
+```java
+// ❌ Nguy hiểm:
+BankAccount account = accountRepo.findById(id).get(); // NoSuchElementException nếu null
+
+// ✅ Cách đúng trong BankX:
+BankAccount account = accountRepo.findById(id)
+  .orElseThrow(() -> new ResourceNotFoundException(
+    "Tài khoản không tồn tại: " + id  // Message có context
+  ));
+
+// Hoặc:
+Optional<BankAccount> opt = accountRepo.findById(id);
+if (opt.isEmpty()) {
+  throw new ResourceNotFoundException("...");
+}
+BankAccount account = opt.get(); // An toàn vì đã check
+
+// Với default value:
+BigDecimal balance = accountRepo.findById(id)
+  .map(BankAccount::getBalance)
+  .orElse(BigDecimal.ZERO);
+```
+
+---
+
+### ❓ Tại sao `LocalDate` tốt hơn `java.util.Date` trong banking?
+
+```java
+// java.util.Date — Vấn đề:
+// 1. Mutable → Thread-unsafe
+// 2. Month bắt đầu từ 0 (January = 0!) → Bug muôn thuở
+// 3. Không có timezone concept rõ ràng
+// 4. Deprecated từ Java 1.1
+
+// java.time.LocalDate / LocalDateTime / ZonedDateTime — Tốt hơn:
+LocalDate transactionDate = LocalDate.of(2026, 9, 16); // Tháng 9 là 9, không phải 8
+ZonedDateTime transactionTime = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+// Immutable → Thread-safe
+
+// Trong BankX + PostgreSQL + JPA:
+@Column(name = "created_at")
+private ZonedDateTime createdAt; // TIMESTAMPTZ trong PostgreSQL
+// @CreationTimestamp của Hibernate auto-set khi INSERT
+```
+
+---
+
+### ❓ `HashMap` trong multi-threaded banking service có vấn đề gì?
+
+```java
+// ❌ HashMap trong concurrent environment:
+// HashMap không thread-safe → Race condition → Data corruption, infinite loop trong resize
+
+// BankX dùng:
+// ConcurrentHashMap — Thread-safe HashMap:
+private final Map<String, CircuitBreakerState> circuitStates
+  = new ConcurrentHashMap<>();
+
+// Trong banking rate limiter:
+private final Map<String, AtomicInteger> requestCounts
+  = new ConcurrentHashMap<>();
+// AtomicInteger cho thread-safe increment mà không lock toàn bộ map
+
+// Collections.synchronizedMap() — Cũ, lock toàn bộ map → Chậm hơn ConcurrentHashMap
+// → KHÔNG dùng nếu có nhiều concurrent read/write
+```
+
+---
+
+### ❓ Memory Leak trong Spring Banking Service — các nguyên nhân phổ biến?
+
+```java
+// Nguyên nhân 1: Static collection tích lũy mãi mãi
+public class FraudRuleCache {
+  private static final Map<String, Rule> RULE_CACHE = new HashMap<>();
+  // Static Map sống với class loader → Không bao giờ GC → Memory leak nếu key tăng mãi
+
+  // Fix: Dùng Caffeine/Guava Cache với expiration:
+  private static final Cache<String, Rule> RULE_CACHE = Caffeine.newBuilder()
+    .maximumSize(1000)
+    .expireAfterWrite(10, TimeUnit.MINUTES)
+    .build();
+}
+
+// Nguyên nhân 2: Thread-local không cleanup
+ThreadLocal<String> currentTraceId = new ThreadLocal<>();
+// Trong Thread Pool (server environment), thread được reuse
+// Nếu không remove() sau request → ThreadLocal tích lũy trong thread pool
+
+// Fix:
+try {
+  currentTraceId.set(traceId);
+  // process...
+} finally {
+  currentTraceId.remove(); // LUÔN cleanup trong finally
+}
+
+// Nguyên nhân 3: RxJS/Subscription chưa unsubscribe (Angular)
+// Xem Bài 09 Angular
+```
+
+---
+
+### ❓ Tại sao không nên log password, card number hay JWT token?
+
+**Tại sao KHÔNG log sensitive data:**
+```java
+// ❌ NGUY HIỂM:
+log.info("User login: username={}, password={}", username, password);
+log.info("Transfer request: {}", requestBody.toString()); // requestBody có card number!
+log.info("Auth token: {}", jwtToken);
+
+// Logs thường được:
+// - Gửi sang ELK Stack (Elasticsearch) → Index → Searchable
+// - Lưu trên nhiều server khác nhau
+// - Dễ bị xem bởi team Ops
+// → Password/card số trong log = vi phạm PCI-DSS, GDPR
+```
+
+**Giải pháp:**
+```java
+// ✅ Mask sensitive fields:
+log.info("User login: username={}", username); // Chỉ log username, không password
+
+// Custom Masking trong Jackson:
+@JsonSerialize(using = MaskedSerializer.class)
+private String cardNumber; // Serialize ra "4111 11** **** 1111" trong log
+
+// Log DTO thay vì raw object:
+log.info("Transfer: amount={}, fromAccount={}, traceId={}",
+  request.getAmount(),
+  maskAccount(request.getFromAccount()), // "0888****01"
+  MDC.get("traceId")); // Safe to log
+
+// Spring Security — Mặc định mask password trong PasswordEncoder logs
+```
+
+---
+
+## 25. Scalability & System Design
+
+---
+
+### ❓ Thiết kế hệ thống chịu 100K TPS cho bảng bank_transfers — em làm gì?
+
+**Approach theo tầng (đây là câu hỏi System Design mở — trình bày tư duy):**
+
+**Tầng 1 — Database:**
+- Write-Optimized PostgreSQL: Disable FSM autovacuum aggressiveness, tune `checkpoint_completion_target=0.9`, `wal_buffers=64MB`.
+- Table Partitioning theo ngày/tuần trên `bank_transfers`.
+- UNLOGGED tables cho in-flight saga state (không cần WAL durability với state tạm thời).
+
+**Tầng 2 — Application:**
+- Java 21 Virtual Threads: Không block OS thread khi chờ DB.
+- Async Kafka producer với batching: `linger.ms=5`, `batch.size=16384` → Kafka batch nhiều messages.
+- Connection Pool: HikariCP `maximumPoolSize = (vCPU * 2) + 1`.
+
+**Tầng 3 — Architecture:**
+- Write Path: Load Balancer → API Gateway → Multiple Core Service instances → PostgreSQL Primary.
+- Read Path: Core Service → Read Replica (hot reads) hoặc Redis Cache (very hot reads).
+- Kafka async processing: Heavy operations (Notification, CQRS projection) off critical path.
+
+**Tầng 4 — Infrastructure:**
+- NVMe SSD cho PostgreSQL WAL journal.
+- Dedicated IOPs volume cho data files.
+- `pg_bouncer` connection pooler trước PostgreSQL (transaction mode).
+
+---
+
+### ❓ Rate Limiting được implement thế nào ở API Gateway level?
+
+**Token Bucket Algorithm (Resilience4j dùng):**
+```
+Bucket có N tokens.
+Mỗi request consume 1 token.
+Tokens được refill với tốc độ R tokens/giây.
+Khi bucket rỗng → Request bị reject (429 Too Many Requests).
+
+Ưu điểm: Cho phép burst (dùng hết tokens cùng lúc) nhưng không vượt tốc độ trung bình.
+Dùng cho: API endpoint giới hạn số lần gọi.
+```
+
+**Fixed Window Counter:**
+```
+Đếm requests trong mỗi window 1 phút.
+Nếu > 100 requests → Reject.
+Nhược điểm: Boundary problem — 100 req cuối phút + 100 req đầu phút kế = 200 req trong 2 giây.
+```
+
+**Sliding Window Log:**
+```
+Lưu timestamp của mỗi request trong Redis Sorted Set.
+ZRANGEBYSCORE key (now-60s) +inf → Đếm requests trong 60s gần nhất.
+Chính xác nhất nhưng tốn memory nhất.
+```
+
+**BankX áp dụng:**
+```java
+// application.yml:
+resilience4j:
+  ratelimiter:
+    instances:
+      interbank-transfer:
+        limit-for-period: 5        # 5 requests
+        limit-refresh-period: 1s   # Mỗi giây
+        timeout-duration: 0s       # Không chờ — reject ngay
+
+// Phân tầng Rate Limit:
+// 1. API Gateway: 1000 req/min per IP (DDoS protection)
+// 2. Auth endpoint: 5 attempts/min per user (Brute force protection)
+// 3. Interbank transfer: 5 req/s (external bank API rate limit)
+// 4. OTP send: 3 attempts/5min per phone (SMS spam protection)
+```
+
+---
+
+### ❓ Nếu Kafka broker down, BankX có mất message không?
+
+**Tại sao KHÔNG mất message:**
+- **Transactional Outbox Pattern** đảm bảo message được ghi vào `outbox_events` trong cùng DB transaction với transfer.
+- Nếu Kafka broker down → `OutboxPollingService` vẫn poll mỗi 2s → Thử publish → Kafka down → Retry sau 2s → Kafka up → Publish ngay.
+- Message không bị mất vì nằm trong PostgreSQL (durable) chứ không chỉ trong memory.
+
+**Kafka Producer config cho durability:**
+```java
+// application.yml:
+spring.kafka.producer:
+  acks: all                # Chờ tất cả in-sync replicas acknowledge
+  retries: 3               # Retry 3 lần nếu broker không ack
+  enable-idempotence: true # Kafka Producer không duplicate khi retry
+  transaction-id-prefix: bankx-producer- # Kafka transactions (nếu dùng)
+```
+
+**Kafka Replication:**
+- `replication.factor: 3` → 3 broker giữ bản sao → 1 broker down → 2 còn lại vẫn serve.
+- `min.insync.replicas: 2` → Phải có ít nhất 2 replicas sync trước khi ack → Data không bị mất kể cả khi 1 broker fail lúc đang write.
+
+---
+
+*Tài liệu được tổng hợp từ toàn bộ kiến trúc và code thực tế của Titan BankX Digital Banking Platform (27 Sprints).  
+Cập nhật: Tháng 9/2026 — Thêm: gRPC, Database tỷ record, Security, Testing, Tricky Questions, Scalability.*
