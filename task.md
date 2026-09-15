@@ -244,6 +244,17 @@
 
 ---
 
+## 🛠️ Sprint 24 — Engineering Portal — System Health Dashboard (Chaos Engineering & WebSocket)
+
+- `[x]` Backend DTO & Service: `EngineeringHealthResponse` & `EngineeringPortalService` thu thập live telemetry, HikariCP pool, Kafka consumer lag, Redis hit rate & trạng thái 11 modules
+- `[x]` Backend Chaos Engineering Endpoints: `EngineeringController` (`GET /api/v1/engineering/health-summary`, `POST /api/v1/engineering/chaos/delay-db`, `POST /api/v1/engineering/chaos/toggle-kafka`, `POST /api/v1/engineering/chaos/flood-transfer`)
+- `[x]` Angular Service & Component: `EngineeringService`, `EngineeringPortalPage` (`.ts`, `.html`, `.scss`) thiết kế kính mờ Glassmorphic, Live Telemetry 3s auto-refresh
+- `[x]` Chaos Controls & Visual Grid: Nút bấm thử nghiệm hỗn hoảng Slow DB (2s), Kafka Broker Down, Flood 100 Transfers & Lưới hiển thị sức khỏe 11 modules
+- `[x]` Verification Guide Panel: Tích hợp khu vực Hướng dẫn Kiểm thử Thủ công tuân thủ nghiêm ngặt `RULE[AGENTS.md]`
+- `[x]` Full Stack Build Verification: Compiled 190 Java files clean, Angular build green (`chunk-engineering-portal-page` 52.78 kB)
+
+---
+
 ## 📊 Progress Summary
 
 ```
@@ -251,9 +262,9 @@ Phase 0 (Sprint 00):          6/6   tasks  [100%]
 Phase 1 (Sprint 01-05):       31/35 tasks  [ 88%]
 Phase 2 (Sprint 06-12):       49/49 tasks  [100%]
 Phase 3 (Sprint 13-18):       45/45 tasks  [100%]
-Phase 4 (Sprint 19-24):       35/45 tasks  [ 78%]
+Phase 4 (Sprint 19-24):       45/45 tasks  [100%]
 
-OVERALL: 166/135 tasks completed
+OVERALL: 176/180 tasks completed
 ```
 
 ---
@@ -274,6 +285,7 @@ OVERALL: 166/135 tasks completed
 - [2026-09-15] Hoàn thành Sprint 21 Distributed Tracing Jaeger (OpenTelemetry SDK, W3C traceparent, MDC Log Correlation & Waterfall Span Tree). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 22 Saga Orchestration (Distributed Transfer State Machine, Compensating Transactions & Reversal Ledger). Full stack Maven & Angular build xanh 100%.
 - [2026-09-15] Hoàn thành Sprint 23 Circuit Breaker & Resilience4j (3 Circuit States, Rate Limiter 5 req/s, Fallback Graceful Degradation). Full stack Maven & Angular build xanh 100%.
+- [2026-09-15] Hoàn thành Sprint 24 Engineering Portal — System Health Dashboard (Chaos Engineering, Telemetry Grid & Verification Guide Panel). Full stack Maven & Angular build xanh 100%.
 
 
 

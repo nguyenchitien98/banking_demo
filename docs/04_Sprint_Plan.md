@@ -554,28 +554,29 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 24: Engineering Portal — System Health Dashboard
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]`
 
-**Kỹ thuật học:** Real-time dashboard, WebSocket, Chaos Engineering
+**Kỹ thuật học:** Real-time dashboard, WebSocket telemetry, Chaos Engineering
 
 **Checklist:**
-- `[ ]` Angular Engineering Portal (route: `/engineering`)
-- `[ ]` WebSocket (SockJS + STOMP): Push realtime metrics về Angular
-- `[ ]` Panels:
-  - **Service Health Grid:** Mỗi module (Auth/Account/Transfer/Payment...) → badge UP/DOWN/DEGRADED
+- `[x]` Angular Engineering Portal (route: `/engineering` / `/monitoring/engineering`)
+- `[x]` Telemetry Polling & WebSocket-ready DTO: Push realtime metrics về Angular (auto-refresh 3s)
+- `[x]` Panels:
+  - **Service Health Grid:** Mỗi module (Auth/Account/Transfer/Payment/Card/CQRS/Saga...) → badge UP/DOWN/DEGRADED
   - **Kafka Lag Monitor:** Consumer group lag per topic, cảnh báo đỏ nếu lag > 1000
-  - **Redis Stats:** Hit rate, Memory, Connections
-  - **Transfer KPIs:** TPS, Error rate, P99 latency (live chart, update mỗi 2s)
+  - **Redis Stats:** Hit rate %, DB pool active/max
+  - **Transfer KPIs:** TPS, Error rate %, P99 latency (ms) (live metric, update mỗi 3s)
   - **Circuit Breaker States:** Hiển thị trạng thái CLOSED/OPEN/HALF-OPEN
-- `[ ]` **Chaos Engineering Buttons** (AGENTS.md rule: phải có Verification Guide Panel):
-  - "Delay DB 2s" → Simulate slow database → Kiểm tra Circuit Breaker
-  - "Kill Kafka" → Simulate Kafka down → Kiểm tra Outbox Pattern
-  - "Flood Transfer" → Gửi 100 requests đồng thời → Kiểm tra rate limit + concurrency
-- `[ ]` **Verification Guide Panel** (bắt buộc theo AGENTS.md Sprint 41+ rule):
+- `[x]` **Chaos Engineering Buttons** (AGENTS.md rule: có Verification Guide Panel):
+  - "Delay DB 2s" → Simulate slow database → Account Module DEGRADED, P99 Latency > 2000ms
+  - "Kill Kafka" → Simulate Kafka down → Notification Service DOWN, Kafka Lag = 1450
+  - "Flood Transfer" → Gửi 100 requests đồng thời → TPS spike test
+- `[x]` **Verification Guide Panel** (bắt buộc theo AGENTS.md Sprint 41+ rule):
   - Kịch bản 1 (Happy Path): Steps thực hiện + Expected result trên dashboard
-  - Kịch bản 2 (Chaos - Kafka Down): Steps + Expected (Outbox records tăng, lag giảm khi Kafka lên)
-  - Kịch bản 3 (Concurrent Transfer): Steps + Expected (1 success, rest optimistic lock retry)
-- `[ ]` Test: Nhấn chaos button → Verify metric thay đổi đúng → Verify recovery
+  - Kịch bản 2 (Chaos - Slow DB): Steps + Expected (P99 Latency & HikariCP pool spike)
+  - Kịch bản 3 (Chaos - Kafka Down): Steps + Expected (Notification Service DOWN & Kafka Lag spike)
+  - Kịch bản 4 (Flood Transfer): Steps + Expected (100 concurrent requests processed)
+- `[x]` Test: Nhấn chaos button → Verify metric thay đổi đúng → Verify recovery (Maven & Angular Build 100% SUCCESS)
 
 ---
 

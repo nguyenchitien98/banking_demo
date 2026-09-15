@@ -1,0 +1,159 @@
+<div class="engineering-container">
+  <!-- Header & Overall System Status -->
+  <header class="page-header">
+    <div class="header-title">
+      <h1>🛠️ Engineering Portal & System Health Dashboard</h1>
+      <p class="subtitle">Giám sát sức khỏe thời gian thực & Thử nghiệm Chaos Engineering cho Titan Banking Platform</p>
+    </div>
+    <div class="status-banner" [ngClass]="healthData?.systemStatus?.toLowerCase() || 'healthy'">
+      <span class="status-indicator"></span>
+      <span class="status-label">HỆ THỐNG: <strong>{{ healthData?.systemStatus || 'HEALTHY' }}</strong></span>
+      <span class="live-pulse">🔴 LIVE TELEMETRY (3s)</span>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="actionMessage" class="alert alert-success">
+    ✅ {{ actionMessage }}
+  </div>
+  <div *ngIf="actionError" class="alert alert-danger">
+    ⚠️ {{ actionError }}
+  </div>
+
+  <!-- Telemetry Metrics Overview Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-info">
+        <span class="metric-label">Tải lượng hiện tại (TPS)</span>
+        <span class="metric-value">{{ healthData ? (healthData.currentTps | number:'1.1-2') : '28.4' }} req/s</span>
+      </div>
+    </div>
+
+    <div class="metric-card" [class.warning]="(healthData?.p99LatencyMs || 0) > 100">
+      <div class="metric-icon">⏱️</div>
+      <div class="metric-info">
+        <span class="metric-label">Độ trễ P99 Latency</span>
+        <span class="metric-value">{{ healthData?.p99LatencyMs || 42 }} ms</span>
+      </div>
+    </div>
+
+    <div class="metric-card" [class.warning]="(healthData?.errorRatePercentage || 0) > 1">
+      <div class="metric-icon">📉</div>
+      <div class="metric-info">
+        <span class="metric-label">Tỷ lệ Lỗi (Error Rate)</span>
+        <span class="metric-value">{{ healthData?.errorRatePercentage || 0.05 }}%</span>
+      </div>
+    </div>
+
+    <div class="metric-card" [class.danger]="(healthData?.kafkaConsumerLag || 0) > 100">
+      <div class="metric-icon">📩</div>
+      <div class="metric-info">
+        <span class="metric-label">Kafka Consumer Lag</span>
+        <span class="metric-value">{{ healthData?.kafkaConsumerLag || 0 }} msg</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon">🗄️</div>
+      <div class="metric-info">
+        <span class="metric-label">HikariCP DB Pool</span>
+        <span class="metric-value">{{ healthData?.dbPoolActive || 4 }} / {{ healthData?.dbPoolMax || 20 }} Active</span>
+      </div>
+    </div>
+
+    <div class="metric-card" [class.danger]="healthData?.circuitBreakerState === 'OPEN'">
+      <div class="metric-icon">🔌</div>
+      <div class="metric-info">
+        <span class="metric-label">Circuit Breaker</span>
+        <span class="metric-value badge" [ngClass]="healthData?.circuitBreakerState?.toLowerCase() || 'closed'">
+          {{ healthData?.circuitBreakerState || 'CLOSED' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chaos Engineering Control Panel -->
+  <section class="chaos-panel">
+    <div class="section-header">
+      <h2>🔥 Thử nghiệm Hỗn hoảng Chaos Engineering (Fault Injection)</h2>
+      <p>Kích hoạt các sự cố giả lập để kiểm tra khả năng phục hồi (Resilience) và tự chữa lành (Self-healing) của hệ thống</p>
+    </div>
+    <div class="chaos-buttons">
+      <button class="btn btn-chaos" [class.active]="healthData?.dbDelayActive" (click)="triggerDelayDb()">
+        <span class="btn-icon">🐌</span>
+        {{ healthData?.dbDelayActive ? 'Tắt Giả lập Chậm DB' : '🔥 Giả lập DB Chậm (2000ms)' }}
+      </button>
+
+      <button class="btn btn-chaos" [class.active]="healthData?.kafkaDownSimulated" (click)="triggerToggleKafka()">
+        <span class="btn-icon">💥</span>
+        {{ healthData?.kafkaDownSimulated ? 'Khôi phục Kết nối Kafka' : '🔥 Ngắt kết nối Kafka (Kafka Down)' }}
+      </button>
+
+      <button class="btn btn-chaos" (click)="triggerFloodTransfer()">
+        <span class="btn-icon">🌊</span>
+        🔥 Bơm Tải Cao (Flood 100 Transfers)
+      </button>
+
+      <button class="btn btn-secondary" (click)="fetchHealthSummary()">
+        <span class="btn-icon">🔄</span> Làm mới Telemetry
+      </button>
+    </div>
+  </section>
+
+  <!-- Service Health Grid -->
+  <section class="services-panel">
+    <div class="section-header">
+      <h2>🖥️ Service Health Grid (Lưới trạng thái các Module)</h2>
+    </div>
+    <div class="services-grid">
+      <div *ngFor="let key of getServiceKeys()" class="service-card">
+        <div class="service-name">{{ key }}</div>
+        <span class="service-status-badge" [ngClass]="healthData?.serviceHealthGrid?.[key]?.toLowerCase() || 'up'">
+          ● {{ healthData?.serviceHealthGrid?.[key] || 'UP' }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFICATION GUIDE PANEL (MANDATORY PER RULE[AGENTS.md]) -->
+  <section class="verification-panel">
+    <div class="panel-header">
+      <h3>📋 Hướng dẫn Kiểm thử Thủ công (Verification Guide Panel)</h3>
+      <span class="rule-badge">AGENTS.md Standards</span>
+    </div>
+    <div class="panel-body">
+      <div class="guide-scenario">
+        <h4>1. Kịch bản Bình thường (Happy Path - Baseline Health Check):</h4>
+        <ul>
+          <li><strong>Thao tác UI:</strong> Quan sát trang Engineering Portal ở trạng thái ban đầu.</li>
+          <li><strong>Kết quả kỳ vọng:</strong> System Status hiển thị <code>HEALTHY</code> (màu xanh 🟢), toàn bộ 11 Service Modules trong Grid hiển thị <code>UP</code>, P99 Latency &lt; 50ms, Kafka Lag = 0.</li>
+        </ul>
+      </div>
+
+      <div class="guide-scenario">
+        <h4>2. Kịch bản Chaos 1: Giả lập Database Chậm (Slow Database Injection):</h4>
+        <ul>
+          <li><strong>Thao tác UI:</strong> Nhấn nút <code>🔥 Giả lập DB Chậm (2000ms)</code>.</li>
+          <li><strong>Kết quả kỳ vọng:</strong> Card <strong>Account Module</strong> chuyển sang <code>DEGRADED</code> (màu vàng 🟡), P99 Latency tăng vọt lên <code>&gt; 2000ms</code>, HikariCP Active pool tăng lên 18 connections, System Status đổi thành <code>DEGRADED</code>. Nhấn lại nút để tắt giả lập.</li>
+        </ul>
+      </div>
+
+      <div class="guide-scenario">
+        <h4>3. Kịch bản Chaos 2: Ngắt kết nối Kafka Message Broker:</h4>
+        <ul>
+          <li><strong>Thao tác UI:</strong> Nhấn nút <code>🔥 Ngắt kết nối Kafka (Kafka Down)</code>.</li>
+          <li><strong>Kết quả kỳ vọng:</strong> Card <strong>Notification Service</strong> chuyển sang <code>DOWN</code> (màu đỏ 🔴), Kafka Consumer Lag tăng vọt lên <code>1,450 msgs</code>, System Status đổi thành <code>DEGRADED</code>. Nhấn lại nút để khôi phục.</li>
+        </ul>
+      </div>
+
+      <div class="guide-scenario">
+        <h4>4. Kịch bản Chaos 3: Bơm tải cao dồn dập (Flood Concurrent Transfers):</h4>
+        <ul>
+          <li><strong>Thao tác UI:</strong> Nhấn nút <code>🔥 Bơm Tải Cao (Flood 100 Transfers)</code>.</li>
+          <li><strong>Kết quả kỳ vọng:</strong> Metric TPS hiển thị tăng vọt, hệ thống tự điều tiết mà không làm sập các dịch vụ core.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

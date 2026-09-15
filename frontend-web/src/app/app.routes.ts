@@ -84,6 +84,11 @@ export const routes: Routes = [
             (m) => m.MONITORING_ROUTES
           ),
       },
+      {
+        path: 'engineering',
+        redirectTo: 'monitoring/engineering',
+        pathMatch: 'full',
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },
