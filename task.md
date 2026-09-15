@@ -140,15 +140,17 @@
 
 ---
 
-## 📤 Sprint 11 — Outbox Pattern
+## 📤 Sprint 11 — Transactional Outbox Pattern (Reliable Messaging)
 
-- `[ ]` Flyway V7: outbox_events table
-- `[ ]` OutboxEvent entity
-- `[ ]` Ghi Outbox trong @Transactional Transfer
-- `[ ]` OutboxPollingService (Scheduled 1s)
-- `[ ]` Retry max 5, sau đó FAILED
-- `[ ]` Kafka topics: transfer.completed, transfer.failed
-- `[ ]` Test: Kafka down → Transfer success → Outbox records → Kafka up → Publish
+- `[x]` Flyway V7: Bảng `outbox_events` lưu trữ sự kiện cùng CSDL Postgres trong cùng Database Transaction
+- `[x]` `OutboxEventJpaEntity`, `OutboxStatus` (PENDING, SENT, FAILED) & `OutboxService`
+- `[x]` Tích hợp ghi Outbox Event (`TRANSFER_COMPLETED`, `TRANSFER_FAILED`) trong `@Transactional` `TransferApplicationService`
+- `[x]` `OutboxPollingService`: `@Scheduled(fixedDelay = 2000)` định kỳ quét bản tin PENDING đẩy sang Kafka Topic (`transfer.completed`, `transfer.failed`) với Ack confirmation
+- `[x]` Thử lại tối đa 5 lần (Retry max 5), chuyển trạng thái FAILED và hỗ trợ nút Thử lại thủ công
+- `[x]` API: `GET /api/v1/outbox/events`, `POST /api/v1/outbox/events/{id}/retry`, `POST /api/v1/outbox/chaos/toggle-kafka`
+- `[x]` Angular: `OutboxService`, `TransfersPage` tích hợp Bảng Nhật ký Sự kiện Outbox Real-time, Nút giả lập **Chaos Simulation (Kafka DOWN/UP)** & Panel kiểm thử thủ công
+- `[x]` Test: Kafka DOWN $\rightarrow$ DB commit 100% success $\rightarrow$ Outbox records PENDING $\rightarrow$ Kafka UP $\rightarrow$ Events published to Kafka SENT (Maven & Angular Build 100% SUCCESS)
+
 
 ---
 

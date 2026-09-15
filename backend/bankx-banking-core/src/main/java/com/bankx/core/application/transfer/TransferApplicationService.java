@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import java.time.Duration;
 
+import com.bankx.core.application.outbox.OutboxService;
+
 /**
  * Service ứng dụng xử lý các giao dịch Chuyển tiền ngân hàng (Transfer Application Service).
  *
@@ -50,10 +52,11 @@ import java.time.Duration;
  * </ul>
  * </p>
  *
- * <p><b>So sánh Kiến trúc Concurrency Control & Risk-Based OTP (Sprint 10):</b>
+ * <p><b>So sánh Kiến trúc Concurrency Control, Risk-Based OTP & Outbox Pattern (Sprint 11):</b>
  * <ul>
- *   <li><b>Chuyển tiền thấp hơn 5.000.000 VND:</b> Giao dịch hoàn tất ngay lập tức (No OTP required).</li>
+ *   <li><b>Chuyển tiền thấp hơn 5.000.000 VND:</b> Giao dịch hoàn tất ngay lập tức.</li>
  *   <li><b>Chuyển tiền từ 5.000.000 VND trở lên:</b> Chuyển sang trạng thái {@code PENDING_OTP}, sinh mã OTP 6 chữ số lưu Redis 120s và chờ người dùng xác thực.</li>
+ *   <li><b>Outbox Pattern:</b> Ghi bản tin {@code TRANSFER_COMPLETED} hoặc {@code TRANSFER_FAILED} vào bảng {@code outbox_events} trong cùng Database Transaction.</li>
  * </ul>
  * </p>
  *
@@ -73,6 +76,7 @@ public class TransferApplicationService {
     private final LedgerApplicationService ledgerService;
     private final StringRedisTemplate redisTemplate;
     private final SmsSender smsSender;
+    private final OutboxService outboxService;
     private final Random random = new Random();
 
     public TransferApplicationService(BankTransferRepository transferRepository,
@@ -80,13 +84,15 @@ public class TransferApplicationService {
                                        BankAccountRepository accountRepository,
                                        LedgerApplicationService ledgerService,
                                        StringRedisTemplate redisTemplate,
-                                       SmsSender smsSender) {
+                                       SmsSender smsSender,
+                                       OutboxService outboxService) {
         this.transferRepository = transferRepository;
         this.limitRepository = limitRepository;
         this.accountRepository = accountRepository;
         this.ledgerService = ledgerService;
         this.redisTemplate = redisTemplate;
         this.smsSender = smsSender;
+        this.outboxService = outboxService;
     }
 
     /**
@@ -104,7 +110,7 @@ public class TransferApplicationService {
     /**
      * Khởi tạo và thực thi giao dịch Chuyển tiền nội bộ (Internal Bank Transfer).
      *
-     * <p>Tích hợp Risk-based OTP: Giao dịch &ge; 5.000.000 VND yêu cầu nhập mã OTP.</p>
+     * <p>Tích hợp Risk-based OTP & Transactional Outbox Pattern.</p>
      *
      * @param userId ID người dùng thực hiện chuyển tiền
      * @param sourceAccountId ID tài khoản trích nợ
@@ -200,7 +206,12 @@ public class TransferApplicationService {
 
         // 6. Mark Transfer COMPLETED
         transfer.markCompleted(tx.getId());
-        return transferRepository.save(transfer);
+        BankTransfer completedTransfer = transferRepository.save(transfer);
+
+        // Sprint 11: Transactional Outbox Event Publishing
+        outboxService.publishEventWithinTransaction("BankTransfer", completedTransfer.getId().toString(), "TRANSFER_COMPLETED", completedTransfer);
+
+        return completedTransfer;
     }
 
     /**
@@ -243,9 +254,13 @@ public class TransferApplicationService {
 
             if (attempts >= 3) {
                 transfer.markFailed("Nhập sai mã OTP quá 3 lần");
-                transferRepository.save(transfer);
+                BankTransfer failedTransfer = transferRepository.save(transfer);
                 redisTemplate.delete(otpKey);
                 redisTemplate.delete(attemptsKey);
+
+                // Sprint 11: Transactional Outbox Event Publishing on Failure
+                outboxService.publishEventWithinTransaction("BankTransfer", failedTransfer.getId().toString(), "TRANSFER_FAILED", failedTransfer);
+
                 throw new BankingException(ErrorCode.OTP_MAX_ATTEMPTS_EXCEEDED, "Bạn đã nhập sai mã OTP quá 3 lần. Giao dịch bị hủy!");
             }
             throw new BankingException(ErrorCode.OTP_INVALID_OR_EXPIRED, "Mã OTP không chính xác. Bạn còn " + (3 - attempts) + " lần thử.");
@@ -265,8 +280,14 @@ public class TransferApplicationService {
         );
 
         transfer.markCompleted(tx.getId());
-        return transferRepository.save(transfer);
+        BankTransfer completedTransfer = transferRepository.save(transfer);
+
+        // Sprint 11: Transactional Outbox Event Publishing on Completion
+        outboxService.publishEventWithinTransaction("BankTransfer", completedTransfer.getId().toString(), "TRANSFER_COMPLETED", completedTransfer);
+
+        return completedTransfer;
     }
+
 
     /**
      * Lấy mã OTP giả lập từ Redis (phục vụ hiển thị gợi ý kiểm thử Sprint 10 UI).

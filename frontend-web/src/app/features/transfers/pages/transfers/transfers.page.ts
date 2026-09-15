@@ -3,19 +3,19 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AccountService, BankAccount } from '../../../../core/services/account.service';
 import { TransferService, TransferResult } from '../../../../core/services/transfer.service';
+import { OutboxService, OutboxEvent } from '../../../../core/services/outbox.service';
+
 
 /**
- * Màn hình Thực hiện Chuyển tiền Nội bộ & Kiểm thử Idempotency (Internal Bank Transfer Page — TPBank UI).
+ * Màn hình Thực hiện Chuyển tiền Nội bộ, Idempotency Key & Transactional Outbox Pattern (TPBank UI).
  *
  * Chức năng:
  * - Chọn tài khoản trích nợ (Source Account).
  * - Tự động sinh Idempotency Key (UUID v4) bảo vệ từng giao dịch.
- * - Truy vấn số tài khoản thụ hưởng (Recipient Inquiry).
- * - Nhập số tiền giao dịch và các phím chọn nhanh.
- * - Modal xác nhận giao dịch trước khi gửi lệnh.
- * - Biên lai giao dịch thành công (Transfer Result Receipt).
- * - Tính năng Thử nghiệm Gửi lại với CÙNG Idempotency Key để kiểm tra Redis AOP Aspect.
- * - Panel Hướng dẫn Kiểm thử Thủ công (Verification Guide Panel) cho Sprint 08.
+ * - Risk-based OTP xác thực giao dịch lớn (>= 5M VND).
+ * - Ghi bản tin Transactional Outbox vào CSDL Postgres cùng transaction.
+ * - Outbox Poller định kỳ quét PENDING events đẩy tới Kafka Topic.
+ * - Bảng Hướng dẫn Kiểm thử & Chaos Simulator (Giả lập Kafka DOWN/UP).
  *
  * @author BankX Engineering Team
  * @version 1.0
@@ -30,6 +30,7 @@ import { TransferService, TransferResult } from '../../../../core/services/trans
 export class TransfersPage implements OnInit {
   private readonly accountService = inject(AccountService);
   private readonly transferService = inject(TransferService);
+  private readonly outboxService = inject(OutboxService);
 
   public accounts = signal<BankAccount[]>([]);
   public sourceAccountId = '';
@@ -40,6 +41,11 @@ export class TransfersPage implements OnInit {
   // Idempotency State
   public currentIdempotencyKey = '';
   public wasFromCache = false;
+
+  // Sprint 11 Transactional Outbox State
+  public outboxEvents = signal<OutboxEvent[]>([]);
+  public loadingOutbox = false;
+  public kafkaDisabled = false;
 
   // State
   public inquiring = false;
@@ -68,7 +74,61 @@ export class TransfersPage implements OnInit {
   ngOnInit(): void {
     this.currentIdempotencyKey = this.transferService.generateIdempotencyKey();
     this.loadAccounts();
+    this.loadOutboxEvents();
+    this.checkChaosStatus();
   }
+
+  loadOutboxEvents(): void {
+    this.loadingOutbox = true;
+    this.outboxService.getRecentEvents().subscribe({
+      next: (res) => {
+        this.loadingOutbox = false;
+        if (res.code === 0 && res.data) {
+          this.outboxEvents.set(res.data);
+        }
+      },
+      error: () => {
+        this.loadingOutbox = false;
+      }
+    });
+  }
+
+  checkChaosStatus(): void {
+    this.outboxService.getChaosStatus().subscribe({
+      next: (res) => {
+        if (res.code === 0 && res.data) {
+          this.kafkaDisabled = res.data.kafkaDisabled;
+        }
+      }
+    });
+  }
+
+  toggleKafkaChaos(): void {
+    this.outboxService.toggleChaosKafka().subscribe({
+      next: (res) => {
+        if (res.code === 0 && res.data) {
+          this.kafkaDisabled = res.data.kafkaDisabled;
+          this.showToast(res.message);
+          this.loadOutboxEvents();
+        }
+      }
+    });
+  }
+
+  retryOutboxEvent(id: string): void {
+    this.outboxService.retryEvent(id).subscribe({
+      next: (res) => {
+        if (res.code === 0) {
+          this.showToast('✅ Đã kích hoạt thử lại sự kiện Outbox');
+          this.loadOutboxEvents();
+        }
+      },
+      error: (err) => {
+        this.showToast(`Lỗi khi thử lại: ${err?.error?.message || 'Có lỗi xảy ra'}`);
+      }
+    });
+  }
+
 
   loadAccounts(): void {
     this.accountService.getMyAccounts().subscribe({
@@ -188,6 +248,7 @@ export class TransfersPage implements OnInit {
             // Low Risk (< 5M VND): Completed directly!
             this.completedTransfer = res.data;
             this.loadAccounts(); // Refresh balance
+            this.loadOutboxEvents(); // Refresh outbox events
           }
         }
       },
@@ -217,6 +278,7 @@ export class TransfersPage implements OnInit {
           this.showOtpModal = false;
           this.completedTransfer = res.data;
           this.loadAccounts(); // Refresh balance
+          this.loadOutboxEvents(); // Refresh outbox events
           this.showToast('✅ Xác thực OTP thành công! Giao dịch đã hoàn tất.');
         }
       },
@@ -226,6 +288,7 @@ export class TransfersPage implements OnInit {
       }
     });
   }
+
 
   closeOtpModal(): void {
     this.stopOtpTimer();

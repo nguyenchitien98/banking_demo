@@ -163,28 +163,91 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 10 — Risk-based OTP)</h4>
+          <h4>Bảng Hướng Dẫn Kiểm Thử (Sprint 11 — Outbox Pattern & Chaos)</h4>
         </div>
 
         <div class="panel-body">
           <div class="test-scenario">
-            <span class="scenario-title">1. Chuyển tiền &lt; 5.000.000 VND (Không yêu cầu OTP):</span>
-            <p>Nhập số tiền 500,000 ₫ hoặc 1,000,000 ₫. Giao dịch sẽ hạch toán sổ kép và hoàn tất <strong>ngay lập tức</strong>.</p>
+            <span class="scenario-title">1. Chuyển tiền & Ghi Outbox Event (Atomic Transaction):</span>
+            <p>Mỗi khi chuyển tiền thành công, bản tin <code>TRANSFER_COMPLETED</code> sẽ được ghi vào bảng <code>outbox_events</code> cùng CSDL Postgres trong cùng 1 Transaction.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">2. Chuyển tiền &ge; 5.000.000 VND (Cần xác thực OTP):</span>
-            <p>Nhập số tiền 5,000,000 ₫. Hệ thống sẽ giữ trạng thái <code>PENDING_OTP</code>, hiển thị Modal xác thực 2 lớp với countdown 120s và gợi ý mã OTP từ Redis.</p>
+            <span class="scenario-title">2. Quét Poller định kỳ 2s (Kafka Publishing):</span>
+            <p>Class <code>OutboxPollingService</code> chạy định kỳ 2 giây đọc các sự kiện <code>PENDING</code>, phát tới Kafka Topic <code>transfer.completed</code> và chuyển trạng thái <code>SENT</code> khi nhận Ack.</p>
           </div>
 
           <div class="test-scenario">
-            <span class="scenario-title">3. Kiểm tra Idempotency Key (Sprint 08):</span>
-            <p>Bấm nút <strong>"🔁 Gửi lại với CÙNG Idempotency Key"</strong> để kiểm tra Redis Cache response không bị trừ tiền 2 lần.</p>
+            <span class="scenario-title">3. Giả lập Kafka DOWN (Chaos Engineering):</span>
+            <p>Bấm nút <strong>"⚡ Giả lập Kafka DOWN"</strong> bên dưới. Thực hiện chuyển tiền $\rightarrow$ Giao dịch DB vẫn thành công 100%, bản tin Outbox giữ trạng thái <code>PENDING</code>. Sau khi bấm <strong>"Khôi phục Kafka"</strong>, Poller tự động quét và đẩy toàn bộ bản tin sang Kafka!</p>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Sprint 11: Transactional Outbox Pattern & Chaos Engineering Monitor Card -->
+  <div class="card outbox-card">
+    <div class="outbox-header">
+      <div class="title-group">
+        <h3 class="section-title">📦 Nhật Ký Bản Tin Outbox (Transactional Outbox Event Log)</h3>
+        <p class="subtitle">Đảm bảo 100% không mất mát bản tin (At-Least-Once Delivery) dù Kafka có bị sự cố ngắt kết nối</p>
+      </div>
+
+      <div class="outbox-actions">
+        <button class="btn-chaos" [class.active-down]="kafkaDisabled" (click)="toggleKafkaChaos()">
+          {{ kafkaDisabled ? '🔴 Kafka DOWN (Click để khôi phục)' : '⚡ Giả lập Kafka DOWN (Chaos Simulation)' }}
+        </button>
+        <button class="btn-secondary btn-sm" (click)="loadOutboxEvents()" [disabled]="loadingOutbox">
+          {{ loadingOutbox ? 'Đang tải...' : '🔄 Làm mới Bảng Outbox' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="outbox-table-wrapper">
+      <table class="outbox-table">
+        <thead>
+          <tr>
+            <th>ID Sự kiện</th>
+            <th>Loại Sự kiện (Event Type)</th>
+            <th>ID Giao dịch (Aggregate)</th>
+            <th>Trạng thái Outbox</th>
+            <th>Thử lại (Retries)</th>
+            <th>Thời gian tạo</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of outboxEvents(); track event.id) {
+            <tr>
+              <td class="font-mono text-xs">{{ event.id.substring(0, 8) }}...</td>
+              <td class="font-bold text-primary">{{ event.eventType }}</td>
+              <td class="font-mono text-xs">{{ event.aggregateId.substring(0, 8) }}...</td>
+              <td>
+                <span class="badge" [class.badge-pending]="event.status === 'PENDING'" [class.badge-sent]="event.status === 'SENT'" [class.badge-failed]="event.status === 'FAILED'">
+                  {{ event.status === 'SENT' ? '✅ SENT (Kafka Ack)' : event.status === 'PENDING' ? '⏳ PENDING (Poller 2s)' : '❌ FAILED (Max 5 Retries)' }}
+                </span>
+              </td>
+              <td class="text-center font-mono">{{ event.retryCount }}/5</td>
+              <td class="text-xs">{{ event.createdAt | date:'HH:mm:ss dd/MM' }}</td>
+              <td>
+                @if (event.status === 'FAILED') {
+                  <button class="btn-retry-sm" (click)="retryOutboxEvent(event.id)">Thử lại</button>
+                } @else {
+                  <span class="text-xs text-muted">Tự động</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">Chưa có sự kiện outbox nào. Hãy thực hiện 1 giao dịch chuyển tiền!</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 
   <!-- Confirmation Modal -->
   @if (showConfirmModal) {

@@ -448,6 +448,115 @@
   text-align: center;
 }
 
+/* Sprint 11 Outbox Pattern & Chaos Simulation Styles */
+.outbox-card {
+  margin-top: 1rem;
+
+  .outbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+
+    .subtitle {
+      font-size: 0.825rem;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+  }
+
+  .outbox-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+
+    .btn-chaos {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #e65100 0%, #ff8f00 100%);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(230, 81, 0, 0.25);
+      transition: all 0.2s ease;
+
+      &.active-down {
+        background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+        box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4);
+        animation: pulse-border 1.5s infinite;
+      }
+    }
+  }
+}
+
+.outbox-table-wrapper {
+  overflow-x: auto;
+
+  .outbox-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    th, td {
+      padding: 0.75rem 0.875rem;
+      border-bottom: 1px solid var(--color-border);
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-bg);
+      font-weight: 700;
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+
+      &.badge-sent {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+      }
+
+      &.badge-pending {
+        background: #fff8e1;
+        color: #f57f17;
+        border: 1px solid #ffe082;
+      }
+
+      &.badge-failed {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #ffcdd2;
+      }
+    }
+
+    .btn-retry-sm {
+      padding: 4px 10px;
+      background: var(--bank-primary);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--bank-primary-dark);
+      }
+    }
+  }
+}
+
 .toast-notification {
   position: fixed;
   bottom: 24px;
@@ -460,4 +569,5 @@
   z-index: 2000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
+
 

@@ -256,20 +256,21 @@ Tài liệu này là chỉ mục lộ trình 30 Sprint của dự án BankX. M�
 ---
 
 ### Sprint 11: Outbox Pattern — Reliable Messaging
-**Trạng thái:** `[ ]`
+**Trạng thái:** `[x]` Đã hoàn thành
 
 **Kỹ thuật học:** Transactional Outbox, Debezium/Scheduled Poller, At-Least-Once delivery
 
 **Checklist:**
-- `[ ]` Flyway V7: `outbox_events` table
-- `[ ]` `OutboxEvent` entity (type, aggregateId, payload JSON, status, retryCount)
-- `[ ]` Trong `@Transactional` Transfer: Save outbox event cùng transaction
-- `[ ]` `OutboxPollingService`: `@Scheduled(fixedDelay=1000)` → Read PENDING → Publish Kafka → Mark SENT
-- `[ ]` Retry: `retryCount` max 5, sau đó → FAILED (alert admin)
-- `[ ]` Kafka topics: `transfer.completed`, `transfer.failed`
-- `[ ]` Test: Simulate Kafka down → Transfer vẫn thành công → Outbox ghi lại → Kafka lên → Events được publish
+- `[x]` Flyway V7: `outbox_events` table (lưu trữ bản tin sự kiện cùng CSDL Postgres)
+- `[x]` `OutboxEventJpaEntity` (id, aggregateType, aggregateId, payload JSON, status, retryCount) & `OutboxService`
+- `[x]` Trong `@Transactional` Transfer: Save outbox event (`TRANSFER_COMPLETED` / `TRANSFER_FAILED`) trong cùng một Database Transaction với chuyển tiền
+- `[x]` `OutboxPollingService`: `@Scheduled(fixedDelay=2000)` $\rightarrow$ Read PENDING $\rightarrow$ Publish Kafka $\rightarrow$ Mark SENT
+- `[x]` Retry: `retryCount` max 5, sau đó $\rightarrow$ FAILED (hỗ trợ nút Thử lại thủ công trên UI)
+- `[x]` Kafka topics: `transfer.completed`, `transfer.failed`
+- `[x]` Test Chaos Engineering: Giả lập Kafka DOWN $\rightarrow$ Chuyển tiền vẫn thành công 100% trong DB $\rightarrow$ Outbox ghi lại PENDING $\rightarrow$ Giả lập Kafka UP $\rightarrow$ Poller tự động quét và đẩy bản tin sang Kafka SENT (Maven & Angular Build 100% SUCCESS)
 
-**Kỹ thuật phỏng vấn:** "DB commit OK nhưng Kafka publish fail → xử lý thế nào?"
+**Kỹ thuật phỏng vấn:** "DB commit OK nhưng Kafka publish fail (Network partition) $\rightarrow$ xử lý bằng Transactional Outbox Pattern thế nào?"
+
 
 ---
 
