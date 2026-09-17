@@ -6,7 +6,7 @@
 
 ## 1. Angular Signals Reactive Flow
 
-![Angular Signals Flow](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/51df9e9b-7078-4be4-bb63-2f0dc9ee1fdc/angular_signals_flow_1789687450907.png)
+![Angular Signals Flow](file:///c:/Users/Admin/Desktop/banking/angular_signals_flow_1789687450907.png)
 
 **Giải thích:**
 - `signal()` → WritableSignal, có thể `.set()` / `.update()`
@@ -18,7 +18,7 @@
 
 ## 2. NgRx Store Data Flow
 
-![NgRx Store Flow](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/51df9e9b-7078-4be4-bb63-2f0dc9ee1fdc/ngrx_store_flow_1789687474362.png)
+![NgRx Store Flow](file:///c:/Users/Admin/Desktop/banking/ngrx_store_flow_1789687474362.png)
 
 **Giải thích vòng tròn:**
 ```
@@ -31,7 +31,7 @@ Component → dispatch(Action) → Effects (HTTP) → loadSuccess Action
 
 ## 3. Titan BankX System Architecture
 
-![BankX System Architecture](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/51df9e9b-7078-4be4-bb63-2f0dc9ee1fdc/bankx_system_architecture_1789687499565.png)
+![BankX System Architecture](file:///c:/Users/Admin/Desktop/banking/bankx_system_architecture_1789687499565.png)
 
 **4 Tầng Kiến Trúc:**
 | Tầng | Công Nghệ | Vai Trò |
